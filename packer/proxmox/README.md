@@ -6,7 +6,9 @@ Like this
 choco install packer
 packer plugins install github.com/hashicorp/proxmox
 
-packer validate -var-file='..\hetzner-proxmox-server.pkr.hcl' .\888-ubuntu-server-jammy-docker.pkr.hcl 
+export PKR_VAR_proxmox_api_token_secret=api_secret_token
 
-packer build -var-file='..\hetzner-proxmox-server.pkr.hcl' .\888-ubuntu-server-jammy-docker.pkr.hcl
+packer validate -var-file='../hetzner-proxmox-server.pkr.hcl' ./888-ubuntu-server-jammy-docker.pkr.hcl 
+
+packer build -var-file='../hetzner-proxmox-server.pkr.hcl' ./888-ubuntu-server-jammy-docker.pkr.hcl
 ```

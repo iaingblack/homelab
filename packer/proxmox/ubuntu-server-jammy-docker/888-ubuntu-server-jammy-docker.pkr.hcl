@@ -28,6 +28,10 @@ variable "storage_pool" {
     type = string
 }
 
+variable "disk_format" {
+    type = string
+}
+
 variable "network_bridge" {
     type = string
 }
@@ -66,7 +70,7 @@ source "proxmox-iso" "ubuntu-server-jammy" {
 
     disks {
         disk_size = "20G"
-        format = "qcow2"
+        format = "${var.disk_format}"
         storage_pool = "${var.storage_pool}"
         # Being deprecated
         # storage_pool_type = "lvm"
@@ -74,7 +78,7 @@ source "proxmox-iso" "ubuntu-server-jammy" {
     }
 
     # VM CPU Settings
-    cores = "1"
+    cores = "2"
     
     # VM Memory Settings
     memory = "2048" 
