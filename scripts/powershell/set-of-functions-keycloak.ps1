@@ -1,3 +1,25 @@
+function Get-KeycloakAccessToken {
+    param(
+        [string]$KeycloakBaseUrl,
+        [string]$ClientId,
+        [string]$ClientSecret,
+        [string]$Username,
+        [string]$Password
+    )
+
+    $tokenUrl = "$KeycloakBaseUrl/protocol/openid-connect/token"
+    $tokenData = @{
+        grant_type    = "password"
+        client_id     = $ClientId
+        client_secret = $ClientSecret
+        username      = $Username
+        password      = $Password
+    }
+
+    $response = Invoke-RestMethod -Uri $tokenUrl -Method Post -ContentType "application/x-www-form-urlencoded" -Body $tokenData
+    return $response.access_token
+}
+
 function Invoke-KeycloakAdminAPI {
     param (
         [string]$KeycloakURL,
@@ -12,7 +34,7 @@ function Invoke-KeycloakAdminAPI {
     try {
         # Get the authentication token
         $token = Get-KeycloakAuthToken -KeycloakURL $KeycloakURL -AdminUsername $AdminUsername -AdminPassword $AdminPassword
-
+        $token
         if ($token) {
             # Construct the full API URL
             $fullUrl = Join-Path -Path $KeycloakURL -ChildPath $ApiEndpoint
@@ -35,6 +57,81 @@ function Invoke-KeycloakAdminAPI {
     catch {
         Write-Host "An error occurred: $_"
         return $null
+    }
+}
+
+function Get-KeycloakRealmUsersWithStatus {
+    param (
+        [string]$KeycloakURL,
+        [string]$AdminUsername,
+        [string]$AdminPassword,
+        [string]$RealmName
+    )
+
+    $apiEndpoint = "users"
+    $usersResponse = Invoke-KeycloakAdminAPI -KeycloakURL $KeycloakURL -AdminUsername $AdminUsername -AdminPassword $AdminPassword -RequestMethod "GET" -ApiEndpoint "/$RealmName/users"
+
+    if ($usersResponse) {
+        foreach ($user in $usersResponse) {
+            $userId = $user.id
+            $username = $user.username
+            $enabled = $user.enabled
+            $requiredActions = $user.requiredActions -join ', '
+
+            Write-Host "User ID: $userId"
+            Write-Host "Username: $username"
+            Write-Host "Enabled: $($enabled -eq $true)"
+
+            if ($requiredActions) {
+                Write-Host "Pending Actions: $requiredActions"
+            }
+
+            Write-Host "------------------------"
+        }
+    } else {
+        Write-Host "Failed to retrieve users in the realm."
+    }
+}
+
+function Get-KeycloakRealmUsersWithStatusAndRoles {
+    param (
+        [string]$KeycloakURL,
+        [string]$AdminUsername,
+        [string]$AdminPassword,
+        [string]$RealmName
+    )
+
+    $apiEndpoint = "users"
+
+    $usersResponse = Invoke-KeycloakAdminAPI -KeycloakURL $KeycloakURL -AdminUsername $AdminUsername -AdminPassword $AdminPassword -RequestMethod "GET" -ApiEndpoint "$apiEndpoint?realm=$RealmName"
+
+    if ($usersResponse) {
+        foreach ($user in $usersResponse) {
+            $userId = $user.id
+            $username = $user.username
+            $enabled = $user.enabled
+            $requiredActions = $user.requiredActions -join ', '
+
+            # Get user's roles
+            $userRolesResponse = Invoke-KeycloakAdminAPI -KeycloakURL $KeycloakURL -AdminUsername $AdminUsername -AdminPassword $AdminPassword -RequestMethod "GET" -ApiEndpoint "users/$userId/role-mappings/realm"
+            $userRoles = $userRolesResponse | ForEach-Object { $_.name }
+
+            Write-Host "User ID: $userId"
+            Write-Host "Username: $username"
+            Write-Host "Enabled: $($enabled -eq $true)"
+
+            if ($requiredActions) {
+                Write-Host "Pending Actions: $requiredActions"
+            }
+
+            if ($userRoles) {
+                Write-Host "Roles: $($userRoles -join ', ')"
+            }
+
+            Write-Host "------------------------"
+        }
+    } else {
+        Write-Host "Failed to retrieve users in the realm."
     }
 }
 
@@ -308,88 +405,20 @@ function Reset-KeycloakUserPassword {
     }
 }
 
-function Get-KeycloakRealmUsersWithStatus {
-    param (
-        [string]$KeycloakURL,
-        [string]$AdminUsername,
-        [string]$AdminPassword,
-        [string]$RealmName
-    )
-
-    $apiEndpoint = "users"
-
-    $usersResponse = Invoke-KeycloakAdminAPI -KeycloakURL $KeycloakURL -AdminUsername $AdminUsername -AdminPassword $AdminPassword -RequestMethod "GET" -ApiEndpoint "$apiEndpoint?realm=$RealmName"
-
-    if ($usersResponse) {
-        foreach ($user in $usersResponse) {
-            $userId = $user.id
-            $username = $user.username
-            $enabled = $user.enabled
-            $requiredActions = $user.requiredActions -join ', '
-
-            Write-Host "User ID: $userId"
-            Write-Host "Username: $username"
-            Write-Host "Enabled: $($enabled -eq $true)"
-
-            if ($requiredActions) {
-                Write-Host "Pending Actions: $requiredActions"
-            }
-
-            Write-Host "------------------------"
-        }
-    } else {
-        Write-Host "Failed to retrieve users in the realm."
-    }
-}
-
-function Get-KeycloakRealmUsersWithStatusAndRoles {
-    param (
-        [string]$KeycloakURL,
-        [string]$AdminUsername,
-        [string]$AdminPassword,
-        [string]$RealmName
-    )
-
-    $apiEndpoint = "users"
-
-    $usersResponse = Invoke-KeycloakAdminAPI -KeycloakURL $KeycloakURL -AdminUsername $AdminUsername -AdminPassword $AdminPassword -RequestMethod "GET" -ApiEndpoint "$apiEndpoint?realm=$RealmName"
-
-    if ($usersResponse) {
-        foreach ($user in $usersResponse) {
-            $userId = $user.id
-            $username = $user.username
-            $enabled = $user.enabled
-            $requiredActions = $user.requiredActions -join ', '
-
-            # Get user's roles
-            $userRolesResponse = Invoke-KeycloakAdminAPI -KeycloakURL $KeycloakURL -AdminUsername $AdminUsername -AdminPassword $AdminPassword -RequestMethod "GET" -ApiEndpoint "users/$userId/role-mappings/realm"
-            $userRoles = $userRolesResponse | ForEach-Object { $_.name }
-
-            Write-Host "User ID: $userId"
-            Write-Host "Username: $username"
-            Write-Host "Enabled: $($enabled -eq $true)"
-
-            if ($requiredActions) {
-                Write-Host "Pending Actions: $requiredActions"
-            }
-
-            if ($userRoles) {
-                Write-Host "Roles: $($userRoles -join ', ')"
-            }
-
-            Write-Host "------------------------"
-        }
-    } else {
-        Write-Host "Failed to retrieve users in the realm."
-    }
-}
+# ------------------------
 #. .\keycloak_operations.ps1
-# Add-KeycloakUser -KeycloakURL "http://your-keycloak-server/auth/admin/realms/your-realm-name" -AdminUsername "admin" -AdminPassword "admin-password" -RealmName "your-realm-name" -Username "new_user" -Email "new_user@example.com" -Password "user-password"
-# Create-KeycloakUser -KeycloakURL "http://your-keycloak-server/auth/admin/realms/your-realm-name" -AdminUsername "admin" -AdminPassword "admin-password" -RealmName "your-realm-name" -Username "new_user" -Email "new_user@example.com" -Password "user-password"
-# Delete-KeycloakUser -KeycloakURL "http://your-keycloak-server/auth/admin/realms/your-realm-name" -AdminUsername "admin" -AdminPassword "admin-password" -RealmName "your-realm-name" -UsernameToDelete "username-to-delete"
-# Disable-KeycloakUser -KeycloakURL "http://your-keycloak-server/auth/admin/realms/your-realm-name" -AdminUsername "admin" -AdminPassword "admin-password" -RealmName "your-realm-name" -UsernameToDisable "username-to-disable" -DisableUser $false
-# Add-KeycloakUserRole -KeycloakURL "http://your-keycloak-server/auth/admin/realms/your-realm-name" -AdminUsername "admin" -AdminPassword "admin-password" -RealmName "your-realm-name" -UsernameToAddRole "username-to-add-role" -RoleNameToAdd "desired-role-name"
-# Remove-KeycloakUserRole -KeycloakURL "http://your-keycloak-server/auth/admin/realms/your-realm-name" -AdminUsername "admin" -AdminPassword "admin-password" -RealmName "your-realm-name" -UsernameToRemoveRole "username-to-remove-role" -RoleNameToRemove "desired-role-name"
-# Reset-KeycloakUserPassword -KeycloakURL "http://your-keycloak-server/auth/admin/realms/your-realm-name" -AdminUsername "admin" -AdminPassword "admin-password" -RealmName "your-realm-name" -UsernameToReset "username-to-reset" -NewPassword "new-password"
-# Get-KeycloakRealmUsersWithStatus -KeycloakURL "http://your-keycloak-server/auth/admin/realms/your-realm-name" -AdminUsername "admin" -AdminPassword "admin-password" -RealmName "your-realm-name"
-# Get-KeycloakRealmUsersWithStatusAndRoles -KeycloakURL "http://your-keycloak-server/auth/admin/realms/your-realm-name" -AdminUsername "admin" -AdminPassword "admin-password" -RealmName "your-realm-name"
+# ------------------------
+# $keycloak_url = "http://nuc-linux-build:8080/auth/"
+# $adminUsername = "keycloak"
+# $adminPassword = "Password1!"
+# $realmName = "RiskIntegrity"
+# ------------------------
+# . ./set-of-functions-keycloak.ps1; Get-KeycloakRealmUsersWithStatus         -KeycloakURL $keycloak_url -AdminUsername $adminUsername -AdminPassword $adminPassword -RealmName $realmName
+# . ./set-of-functions-keycloak.ps1; Get-KeycloakRealmUsersWithStatusAndRoles -KeycloakURL $keycloak_url -AdminUsername $adminUsername -AdminPassword $adminPassword -RealmName $realmName
+# . ./set-of-functions-keycloak.ps1; Add-KeycloakUser                         -KeycloakURL $keycloak_url -AdminUsername $adminUsername -AdminPassword $adminPassword -RealmName $realmName -Username "new_user" -Email "new_user@example.com" -Password "user-password"
+# . ./set-of-functions-keycloak.ps1; Create-KeycloakUser                      -KeycloakURL $keycloak_url -AdminUsername $adminUsername -AdminPassword $adminPassword -RealmName $realmName-Username "new_user" -Email "new_user@example.com" -Password "user-password"
+# . ./set-of-functions-keycloak.ps1; Delete-KeycloakUser                      -KeycloakURL $keycloak_url -AdminUsername $adminUsername -AdminPassword $adminPassword -RealmName $realmName -UsernameToDelete "username-to-delete"
+# . ./set-of-functions-keycloak.ps1; Disable-KeycloakUser                     -KeycloakURL $keycloak_url -AdminUsername $adminUsername -AdminPassword $adminPassword -RealmName $realmName -UsernameToDisable "username-to-disable" -DisableUser $false
+# . ./set-of-functions-keycloak.ps1; Add-KeycloakUserRole                     -KeycloakURL $keycloak_url -AdminUsername $adminUsername -AdminPassword $adminPassword -RealmName $realmName -UsernameToAddRole "username-to-add-role" -RoleNameToAdd "desired-role-name"
+# . ./set-of-functions-keycloak.ps1; Remove-KeycloakUserRole                  -KeycloakURL $keycloak_url -AdminUsername $adminUsername -AdminPassword $adminPassword -RealmName $realmName -UsernameToRemoveRole "username-to-remove-role" -RoleNameToRemove "desired-role-name"
+# . ./set-of-functions-keycloak.ps1; Reset-KeycloakUserPassword               -KeycloakURL $keycloak_url -AdminUsername $adminUsername -AdminPassword $adminPassword -RealmName $realmName -UsernameToReset "username-to-reset" -NewPassword "new-password"
