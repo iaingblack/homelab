@@ -18,6 +18,8 @@ services:
       - postgres
     container_name: local_keycloak
     environment:
+      KEYCLOAK_USER: ${KEYCLOAK_USER}
+      KEYCLOAK_PASSWORD: ${KEYCLOAK_PASS}
       DB_VENDOR: postgres
       DB_ADDR: postgres
       DB_DATABASE: ${POSTGRESQL_DB}
