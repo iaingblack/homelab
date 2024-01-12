@@ -13,7 +13,10 @@ services:
     networks:
       - local-keycloak
     volumes:
-      - .local/keycloak/:/opt/jboss/keycloak/standalone/data/
+      - keycloak_data:/opt/jboss/keycloak/standalone/data/:rw
+
+volumes:
+  keycloak_data:
 
 networks:
   local-keycloak:
