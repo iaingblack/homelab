@@ -10,6 +10,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRESQL_PASS}
     networks:
       - local-keycloak
+    env_file:
+     -  stack.env
 
   keycloak:
     depends_on:
@@ -27,6 +29,8 @@ services:
     restart: unless-stopped
     networks:
       - local-keycloak
+    env_file:
+      -  stack.env
 
 networks:
   local-keycloak:
