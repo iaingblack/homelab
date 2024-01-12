@@ -408,7 +408,7 @@ function Reset-KeycloakUserPassword {
 # ------------------------
 #. .\keycloak_operations.ps1
 # ------------------------
-# $keycloak_url = "http://nuc-linux-build:8080/auth/"
+# $keycloak_url = "http://nuc-linux-build:28080/auth/"
 # $adminUsername = "keycloak"
 # $adminPassword = "Password1!"
 # $realmName = "RiskIntegrity"
