@@ -1,0 +1,46 @@
+# https://gist.github.com/clarkezone/b22a5851f2e4229f5fd29f1115ddee32
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tailscale-nginx-test
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-tailscale
+  namespace: tailscale-nginx-test
+  labels:
+    app: nginx-tailscale
+spec:
+  selector:
+    matchLabels:
+      app: nginx-tailscale
+  replicas: 2 # tells deployment to run 2 pods matching the template
+  template:
+    metadata:
+      labels:
+        app: nginx-tailscale
+    spec:
+      containers:
+        - name: nginx-tailscale
+          image: nginx:1.20-alpine
+          ports:
+            - containerPort: 80
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-tailscale
+  namespace: tailscale-nginx-test
+spec:
+  type: LoadBalancer
+  loadBalancerClass: tailscale
+  ports:
+    - port: 80
+  selector:
+    app: nginx-tailscale
