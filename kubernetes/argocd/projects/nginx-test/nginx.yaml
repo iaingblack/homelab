@@ -9,7 +9,7 @@ metadata:
   name: nginx-test-deployment
   namespace: nginx-test
 spec:
-  replicas: 3
+  replicas: 5
   selector:
     matchLabels:
       app: nginx
