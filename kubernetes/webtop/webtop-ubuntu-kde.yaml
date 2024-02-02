@@ -1,3 +1,5 @@
+# kubectl get service -n webtop -o wide
+# kubectl delete namespace webtop
 apiVersion: v1
 kind: Namespace
 metadata:
