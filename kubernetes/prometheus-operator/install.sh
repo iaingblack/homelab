@@ -1,3 +1,7 @@
+####################################################################################
+# DOESNT SEEM TO WORK FOR OPENLENS
+####################################################################################
+
 # https://rpi4cluster.com/monitoring/k3s-prometheus-oper/
 # https://prometheus-operator.dev/docs/user-guides/getting-started/
 
