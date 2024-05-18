@@ -1,0 +1,9 @@
+- name: Create an ansible folder
+  ansible.windows.win_file:
+    path: C:\ansible
+    state: directory
+
+- name: Create a file
+  ansible.windows.win_file:
+    path: C:\ansible\ansible_was_here.txt
+    state: touch

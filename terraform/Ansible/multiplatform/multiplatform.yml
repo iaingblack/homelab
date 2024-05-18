@@ -1,0 +1,16 @@
+- name: Show Hosts
+  hosts: all
+
+# The role which will run against the Windows machines
+- name: Run on Windows Hosts
+  hosts: windows
+  become: "no"
+  roles: 
+    - windows
+
+# The role which will run against the Linux machines
+- name: Run on Linux Hosts
+  hosts: linux
+  become: "yes"
+  roles: 
+    - linux

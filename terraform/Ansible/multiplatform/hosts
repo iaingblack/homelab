@@ -1,0 +1,14 @@
+[windows]
+192.168.1.152
+[windows:vars]
+ansible_user=administrator
+ansible_connection=winrm
+ansible_winrm_transport=ntlm
+ansible_port=5985
+
+[linux]
+192.168.1.72
+192.168.1.167
+[linux:vars]
+ansible_user=iain
+ansible_ssh_user=root

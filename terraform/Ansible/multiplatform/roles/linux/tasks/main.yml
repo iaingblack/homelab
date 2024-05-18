@@ -1,0 +1,29 @@
+- debug: var=ansible_os_family
+
+- name: Creates ansible directory
+  file:
+    path: /ansible
+    state: directory
+
+- name: Create an empty file
+  file:
+    path: "/ansible/ansible_was_here.txt"
+    state: touch
+
+- name: Create a file on a redhat system
+  file:
+    path: "/ansible/ansible_noticed_machine_was_redhat_based.txt"
+    state: touch
+  when: ansible_os_family == 'RedHat'
+
+- name: Create a file on a arch system
+  file:
+    path: "/ansible/ansible_noticed_machine_was_arch_based.txt"
+    state: touch
+  when: ansible_os_family == 'Archlinux'
+
+- name: Create a file on a debian system
+  file:
+    path: "/ansible/ansible_noticed_machine_was_debian_based.txt"
+    state: touch
+  when: ansible_os_family == 'Debian'
