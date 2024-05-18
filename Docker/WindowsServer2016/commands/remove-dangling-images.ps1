@@ -1,0 +1,1 @@
+docker images --filter dangling=true -q | %{docker rmi -f $_}

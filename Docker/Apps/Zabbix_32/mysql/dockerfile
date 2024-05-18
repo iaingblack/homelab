@@ -1,0 +1,23 @@
+# Version 0.2
+# http://tecadmin.net/install-zabbix-network-monitoring-on-centos-rhel-and-fedora/
+FROM centos:centos7
+MAINTAINER Iain Black
+ENV REFRESHED_AT 2015-03-19
+# Do this or get a "Failed to get D-Bus connection: Operation not permitted" message
+#ENV container=docker
+
+# Install Zabbix release packages.
+RUN yum install -y http://repo.zabbix.com/zabbix/3.2/rhel/7/x86_64/zabbix-release-3.2-1.el7.noarch.rpm && \
+                   yum update -y && \
+                   yum -y install \
+                          mariadb \
+                          mariadb-server \
+                    yum clean all
+
+# http://www.bluepiccadilly.com/2011/12/creating-mysql-database-and-user-command-line-and-bash-script-automate-process
+COPY ./createdb.sh /root/createdb.sh
+RUN chmod +x /root/createdb.sh
+#Need to figure out MYSQL issue first
+CMD ["/root/createdb.sh", "zabbix", "zabbix", "zabbix"]
+#ENTRYPOINT[""]
+EXPOSE 3306

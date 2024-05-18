@@ -1,0 +1,15 @@
+# Configure the DigitalOcean Provider
+provider "digitalocean" {
+    token = "${var.do_token}"
+}
+
+
+05cfd1db1299b502978c5c8adc0b5fb4a21fafeccf589b31cc34154527bf70d5
+
+# Create a new Web Droplet in the nyc2 region
+resource "digitalocean_droplet" "web" {
+    image = "ubuntu-14-04-x64"
+    name = "web-1"
+    region = "nyc2"
+    size = "512mb"
+}

@@ -1,0 +1,44 @@
+version: '2.1'
+services:
+   gogs:
+    hostname: <%= $gogs_hostname %>
+    build: ./gogs/
+    image: gogs
+    volumes:
+     - <%= $gogs_host_data_root %>/:<%= $gogs_container_data_root  %>/gogs/
+    environment:
+     - gogs_container_data_root=<%= $gogs_container_data_root  %>
+    ports:
+     - "3000:3000"
+     - "3001:3001"
+     - "22:22"
+#    links:
+#     - project-teamcity     
+
+   buildagent:
+    hostname: <%= $buildagent_hostname %>
+    build: ./buildagent/
+    image: buildagent
+    volumes:
+     - <%= $gogs_host_data_root %>/:<%= $gogs_container_data_root  %>/gogs/     
+    links:
+     - gogs
+
+   teamcity:
+    hostname: teamcity
+    build: ./teamcity/
+    image: teamcity
+    volumes:
+#     - <%= $teamcity_container_install_root %>/:C:/TeamCity/
+     - <%= $teamcity_container_data_root %>/:C:/ProgramData/JetBrains/TeamCity/
+    ports:
+     - "8111:8111"
+     - "80:80"
+#    links:
+#     - gogs
+#     - teamcity     
+
+networks:
+  default:
+    external:
+      name: nat

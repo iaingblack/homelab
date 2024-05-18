@@ -1,0 +1,17 @@
+General idea;
+
+JENKINS
+docker run -t -i -p 8080:8080 -v /etc/localtime:/etc/localtime:ro -P stephenreed/java8-jenkins-maven-git-nano
+java -jar opt/jenkins.war
+
+Add plugins if possible
+
+NEXUS
+docker run -d -p 8081:8081 --name nexus sonatype/nexus3
+http://ipaddress:8081/nexus/
+
+TOMCAT
+docker run -d -p 8888:8080 tomcat:8.0
+
+
+Create a big compose app for this

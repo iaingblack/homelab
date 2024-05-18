@@ -1,0 +1,21 @@
+# TODO - set hostname, use mysql(?), avoid creation screen. allow changing port on load 
+# docker build -t teamcity .
+# mkdir c:\teamcity
+# docker run -d -p 8080:80 -p 4430:443 -p 8111:8111 -v c:/teamcity/:C:/ProgramData/JetBrains/TeamCity/ teamcity
+
+FROM microsoft/windowsservercore
+SHELL ["powershell"]
+
+#RUN @powershell -NoProfile -ExecutionPolicy Bypass -Command "iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))" && SET "PATH=%PATH%;%ALLUSERSPROFILE%\chocolatey\bin"
+
+#Create a folder to hold our unique installation and work data
+RUN New-Item C:\ProgramData\JetBrains\TeamCity -type directory -Force
+RUN set-itemproperty -path 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\DOS Devices' -Name 'G:' -Value '\??\C:\ProgramData\JetBrains\TeamCity' -Type String
+#Install teamcity itself
+RUN choco install teamcity -y
+
+EXPOSE 80
+EXPOSE 443
+EXPOSE 8111
+
+CMD powershell c:/dockerfile.ps1 -Verbose

@@ -1,0 +1,21 @@
+Simple Way to Install server and agent on one machine.
+
+#Install Rancher
+docker pull rancher/server
+
+#Run the Server Image
+docker run -d --restart=always -p 8080:8080 rancher/server
+
+#Or with external DB
+docker run -d -v <host_vol>:/var/lib/mysql --restart=unless-stopped -p 8080:8080 rancher/server
+
+#In admin console make it be the local IP of the machine and port 8080, ignore complaints its not visible etc..
+
+#Run the Rancher Agent. Replace system_ip with machine IP and secret_key_generated_per_instance with the one it generates in WebUI
+docker run -e CATTLE_AGENT_IP="system_ip"  -d --privileged -v /var/run/docker.sock:/var/run/docker.sock -v /var/lib/rancher:/var/lib/rancher rancher/agent:v1.0.2 http://system_ip:8080/v1/scripts/secret_key_generated_per_instance
+
+
+
+#Like this
+docker run -d --restart=always -p 8080:8080 rancher/server
+docker run -e CATTLE_AGENT_IP="10.7.133.62"  -d --privileged -v /var/run/docker.sock:/var/run/docker.sock -v /var/lib/rancher:/var/lib/rancher rancher/agent:v1.0.2 http://10.7.133.62:8080/v1/scripts/6AE6792CE30A241A1338:1476352800000:VnTFIAG5F4KzvA40xgCPlhuPE

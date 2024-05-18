@@ -1,0 +1,4 @@
+FROM tomcat:8.0
+COPY sample.war ./webapps/sample.war 
+COPY tomcat-users.xml ./conf/tomcat-users.xml
+CMD ["catalina.sh", "run"]

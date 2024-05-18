@@ -1,0 +1,207 @@
+# docker build -t buildagent -f dockerfile .
+# docker run -it xyz cmd
+FROM microsoft/windowsservercore
+RUN @powershell -NoProfile -ExecutionPolicy Bypass -Command "iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))" && SET "PATH=%PATH%;%ALLUSERSPROFILE%\chocolatey\bin"
+RUN choco feature enable -n allowGlobalConfirmation
+RUN choco install finalbuilder --version 7.0.0.3352 --allow-empty-checksums
+RUN choco install git --version 2.9.3
+RUN choco install netfx-4.5.1-devpack
+RUN choco install netfx-4.5.2-devpack
+RUN choco install netfx-4.6-devpack
+RUN choco install dotnet4.6.1-devpack
+RUN choco install netfx-4.6.2-devpack
+#Seems to exit with code 3010 which is fine, but then the wrapper script exits with a 1. Ignore exit code for now. Seems to stilll break....
+#RUN choco install windowsazurepowershell --ignore-exit-codes
+RUN choco install microsoft-build-tools --version 12.0.21005.20140416
+RUN choco install microsoft-build-tools --version 14.0.25420.1
+RUN choco install visualfsharptools --version 3.1.2
+RUN choco install nodejs.install --version 6.9.4
+RUN choco install python2 --version 2.7.13
+RUN choco install typescript.vs --version 1.0.1
+RUN choco install typescript.vs2013 --version 1.7.5
+RUN choco install typescript.vs2013 --version 1.8.5
+RUN choco install typescript-vs2015 --version 2.2.2.0
+RUN choco install tortoisesvn --version 1.7.15.1
+#Version 2.0.0 seems broken. Install JRE ahead of time too - Currently broken...
+#RUN choco install jre8 -PackageParameters="/exclude:64" --install-arguments "INSTALLDIR=c:\jre8"
+RUN choco install teamcityagent --version 1.2.1
+CMD ping -t localhost
+
+# Teamcity Agent may need to be a manual install
+# https://chocolatey.org/packages/TeamCityAgent/2.0.0
+# Unforunately this package is not suitable for building Docker images as it requires -params, which is not always convenient, as long as buildAgent.properties already exists. Also it tries to contact TC server during installation.
+
+# Eye-balling the installed apps
+# ______________________________________________________________________
+# Advanced Installer *** not in chocolatey
+# Extreme Optimization *** not in chocolatey
+# F# Tools for Visual Studio Express 2012 for Web
+# Finalbuilder 7.0.0.1561 *** not in chocolatey, v3352 is though! Trying that)
+# Git Version 2.9.3
+# .Net Targeting packs/SDKs (4.5.1, 4.5.2, 4.6, 4.6.1)
+# Azure Powershell (OUTDATED)
+# Microsoft Build Tools 2013
+# Microsoft Build Tools 2015
+# Microsoft HPC 2012 Client Components *** not in chocolatey
+# Microsoft Visual F# 3.1.2
+# Node.js (6.9.4)
+# NuGetExtract (1.0.1) *** Not in chocolatey (gui tool?)
+# Python 2.7.13
+# Typescript VS 2012 1.0.0.0 *** Close enough 1.0.1
+# Typescript VS 2013 1.4.0.0 *** not in chocolatey, other versions are though
+# Typescript VS 2013 1.6.2.0 *** not in chocolatey, other versions are though
+# Typescript VS 2013 1.7.3.0 *** not in chocolatey, other versions are though
+# Typescript VS 2015 1.6.3.0 *** not in chocolatey, other versions are though
+# Typescript VS 2015 2.2.2.0 
+
+# Get-ItemProperty HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\* | Select-Object DisplayName, DisplayVersion | Format-Table –AutoSize
+# ______________________________________________________________________
+# X - Google Chrome
+# Visual C++ Compiler/Tools X64 X86 Cross Package
+# Kits Configuration Installer
+# Visual C++ Compiler/Tools X64 Native Package
+# Universal CRT Redistributable
+# Windows Runtime Intellisense Content - en-us
+# NuGetExtract
+# Microsoft Visual C++ 2013 x86 Minimum Runtime - 12.0.21005
+# TypeScript Power Tool
+# Visual C++ Library CRT X86 Redist Package
+# Windows SDK Desktop Tools
+# TypeScript Power Tool
+# Microsoft .NET Framework 4.5.2 Multi-Targeting Pack
+# Windows Team Extension SDK
+# Visual C++ Library CRT X64 Desktop Package
+# Visual C++ Library CRT X86 Desktop Package
+# WinRT Intellisense Xbox Live Extension SDK - Other Languages
+# Visual C++ Library ATL X64 Package
+# Microsoft Visual C++ 2008 Redistributable - x86 9.0.30729.4148
+# Universal CRT Extension SDK
+# Visual C++ Compiler/Tools X86 X64 Cross Package
+# Microsoft Visual C++ 2015 Redistributable (x86) - 14.0.24210
+# Visual C++ Library ATL ARM Package
+# Microsoft Visual C++ 2015 x86 Debug Runtime - 14.0.24210
+# Visual C++ Compiler/Tools X86 ARM Cross Resource Package
+# Windows Desktop Extension SDK Contracts
+# Windows Software Development Kit - Windows 10.0.10586.15
+# Microsoft .NET Framework 4.5.2 Multi-Targeting Pack (ENU)
+# Microsoft Build Tools 2013
+# Microsoft .NET Framework 4.6 Targeting Pack
+# Microsoft .NET Framework 4.6.1 SDK
+# WinRT Intellisense PPI - Other Languages
+# WinRT Intellisense PPI - en-us
+# TypeScript Tools for Microsoft Visual Studio 2015 2.2.2.0
+# TypeScript Tools for Microsoft Visual Studio 2013
+# Visual C++ Library CRT ARM Store Package
+# Visual C++ MSBuild Base Package
+# WinRT Intellisense IoT - Other Languages
+# Microsoft Azure PowerShell - January 2017
+# Windows Software Development Kit for Windows Store Apps
+# Intellisense Lang Pack Mobile Extension SDK 10.0.10240.0
+# Visual C++ Library ATL Source Package
+# FinalBuilder 7.0.0.1561
+# Visual C++ Library ATL Headers Package
+# TypeScript for Microsoft Visual Studio 2012 PowerTool 1.0.0.0
+# Windows SDK EULA
+# WinRT Intellisense Desktop - en-us
+# Visual C++ Library MFC X86 Package
+# VWD F# Installer
+# Microsoft Build Tools Language Resources 14.0 (x86)
+# Visual C++ Compiler/Tools X86 ARM Cross Package
+# Visual C++ MSBuild ARM Package
+# Visual C++ Compiler/Tools X86 X64 Cross Resource Package
+# Visual F# 3.1.2 SDK
+# Windows Software Development Kit for Windows Store Apps DirectX x86 Remote
+# Sandcastle Help File Builder
+# Advanced Installer 9.7
+# Visual C++ Compiler/Tools X64 ARM Cross Package
+# Visual C++ Library CRT X64 Redist Package
+# Visual C++ Compiler/Tools X86 Base Resource Package
+# Windows SDK for Windows Store Apps Headers Libs
+# Windows SDK Desktop Headers Libs Metadata
+# Visual C++ Compiler/Tools X86 Native Resource Package
+# Microsoft .NET Framework 4.5.1 Multi-Targeting Pack
+# Universal General MIDI DLS Extension SDK
+# Microsoft Build Tools 14.0 (x86)
+# Microsoft .NET Framework 4.6 Targeting Pack
+# Visual C++ CRT Headers Package
+# Visual C++ Compiler/Tools X86 Base Package
+# Windows SDK AddOn 10.0.10240.0 - x86
+# Microsoft Visual C++ 2013 Redistributable (x64) - 12.0.21005
+# Advanced Installer 13.2.1
+# F# Tools for Visual Studio Express 2012 for Web
+# Visual C++ Compiler/Tools X86 Base Resource Package
+# Advanced Installer 13.7
+# Windows SDK
+# Microsoft .NET Framework 4.6.1 Targeting Pack
+# Universal CRT Headers Libraries and Sources
+# Windows SDK EULA
+# Visual C++ MSBuild X86 Package
+# Windows IoT Extension SDK Contracts
+# TypeScript Power Tool
+# Microsoft .NET Framework 4.6.1 Targeting Pack (ENU)
+# WinRT Intellisense UAP - Other Languages
+# Visual C++ Compiler/Tools X64 Base Package
+# Microsoft Visual C++ 2015 x86 Minimum Runtime - 14.0.24210
+# Windows Desktop Extension SDK
+# WinRT Intellisense Xbox Live Extension SDK - en-us
+# Visual C++ Compiler/Tools X64 Native Resource Package
+# Build Tools Language Resources - x86
+# Visual C++ Library CRT ARM Redist Package
+# Visual C++ Library MFC Headers Package
+# Windows Software Development Kit
+# Visual C++ Compiler/Tools X86 Native Package
+# Visual C++ Library MFC Source Package
+# TypeScript Power Tool
+# Visual C++ Library CRT Source Package
+# Windows Software Development Kit DirectX x86 Remote
+# Windows SDK for Windows Store Apps DirectX x86 Remote
+# Visual C++ Core Build Toolset
+# Windows SDK for Windows Store Apps
+# Microsoft Visual C++ Build Tools
+# Windows App Certification Kit x64
+# WinRT Intellisense IoT - en-us
+# WinRT Intellisense UAP - en-us
+# Universal CRT Tools x86
+# Visual C++ Compiler/Tools X64 ARM Cross Resource Package
+# Windows SDK Redistributables
+# Microsoft .NET Framework 4.6 SDK
+# Windows Mobile Extension SDK 10.0.10240.0 - x86
+# Visual C++ Compiler/Tools X86 Base Package
+# Visual C++ Library CRT X86 Store Package
+# Windows SDK DirectX x86 Remote
+# Visual C++ Compiler/Tools X64 X86 Cross Resource Package
+# WinRT Intellisense Desktop - Other Languages
+# Microsoft .NET Framework 4.6.1 Developer Pack
+# Microsoft Visual C++ 2013 Redistributable (x86) - 12.0.21005
+# Visual C++ MSBuild Base Resource Package
+# Microsoft Build Tools 2015
+# Microsoft .NET Framework 4.5.1 Multi-Targeting Pack (ENU)
+# Windows Mobile Extension SDK 10.0.10240.0 - ARM
+# Microsoft Visual F# 3.1.2
+# Microsoft Visual C++ 2015 x86 Additional Runtime - 14.0.24210
+# TypeScript Tools for Microsoft Visual Studio 2015 1.6.3.0
+# Visual C++ Library MFC MBCS Package
+# TypeScript Tools for Microsoft Visual Studio 2013 1.4.0.0
+# TypeScript Tools for Microsoft Visual Studio 2013 1.7.3.0
+# Visual C++ Library CRT X64 Store Package
+# TypeScript Power Tool
+# Windows Team Extension SDK Contracts
+# TypeScript Tools for Microsoft Visual Studio 2013 1.6.2.0
+# Windows IoT Extension SDK
+# Windows Software Development Kit - Windows 10.0.26624
+# Microsoft Visual Studio 2013 Preparation
+# Visual C++ Library MFC X64 Package
+# Windows Mobile Connectivity Tools 10.0.10240.0 - Desktop x86
+# Windows App Certification Kit SupportedApiList x86
+# Visual C++ Compiler/Tools X64 Base Resource Package
+# Visual C++ MSBuild X64 Package
+# Visual C++ Library CRT ARM Desktop Package
+# TypeScript Tools for Microsoft Visual Studio 2015
+# Microsoft Visual C++ 2010  x86 Redistributable - 10.0.40219
+# Microsoft Visual C++ 2015 Redistributable (x64) - 14.0.24210
+# Windows SDK for Windows Store Apps Tools
+# Microsoft Visual C++ 2013 x86 Additional Runtime - 12.0.21005
+# Visual C++ Library ATL X86 Package
+# WinAppDeploy
+# Build Tools - x86
+# Windows SDK for Windows Store Apps Contracts

@@ -1,0 +1,19 @@
+version: '2'
+services:
+    tomcat:
+      image: tomcat:8.0
+      ports:
+        - "8888:8080"
+    jenkins:
+      image: jenkins
+      ports:
+        - "80:8080"
+    gogs:
+      image: gogs/gogs
+      ports:
+        - "10022:22"
+        - "10080:3000"
+    nexus:
+      image: sonatype/nexus3
+      ports: 
+        - "8081:8081"

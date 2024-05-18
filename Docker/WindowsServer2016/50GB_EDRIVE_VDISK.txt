@@ -1,0 +1,6 @@
+create vdisk file=c:\vhds\test.vhd maximum=50000 type=expandable
+attach vdisk
+create partition primary size=49990
+format fs=ntfs label="data” quick
+assign letter=e
+exit
