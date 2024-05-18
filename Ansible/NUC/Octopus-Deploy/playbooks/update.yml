@@ -1,0 +1,17 @@
+---
+- hosts: all
+  tasks:
+    - name: Pull latest images
+      ansible.builtin.shell:
+        cmd: docker compose pull
+        chdir: /home/iain/docker/octopusdeploy
+    - name: Stop Octopus
+      ansible.builtin.shell:
+        cmd: 
+          docker compose stop
+        chdir: /home/iain/docker/octopusdeploy
+    - name: Start Octopus
+      ansible.builtin.shell:
+        cmd: 
+          docker compose up -d
+        chdir: /home/iain/docker/octopusdeploy
