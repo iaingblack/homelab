@@ -1,5 +1,5 @@
 terraform {
-  required_version = ">= 0.13"
+  required_version = ">= 1.0"
   backend "azurerm" {
     resource_group_name = "Terraform"
     storage_account_name = "ibterraformstatefiles"
@@ -10,7 +10,7 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 3.53.0"
+      version = "~> 3.104.0"
     }
     hcloud = {
       source = "hetznercloud/hcloud"
