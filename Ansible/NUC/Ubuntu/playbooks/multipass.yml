@@ -17,5 +17,5 @@
         state: present
     - name: Install foo
       community.general.snap:
-        name:
-          - multipass
+        name: multipass
+        classic: true
