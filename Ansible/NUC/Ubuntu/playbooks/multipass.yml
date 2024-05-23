@@ -11,6 +11,8 @@
         name: qemu-guest-agent
         state: latest
       when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
-
-
+    - name: Install snapd
+      ansible.builtin.package:
+        name: snapd
+        state: present
       
