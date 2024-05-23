@@ -27,3 +27,13 @@
       community.general.snap:
         name: multipass
         classic: true
+    - name: Set Multipass driver to LXD
+      community.general.multipass:
+        name: multipass
+        state: present
+        classic: true
+        args:
+          set: local.driver=lxd
+
+
+# multipass set local.driver=lxd
