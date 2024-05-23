@@ -1,0 +1,39 @@
+---
+- hosts: all
+  tasks:
+    # Debian and Ubuntu
+    - name: Debian and Ubuntu OS Upgrade
+      ansible.builtin.apt:
+        upgrade: yes
+      when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+    - name: Install qemu-guest-agent
+      ansible.builtin.apt:
+        name: qemu-guest-agent
+        state: latest
+      when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+    - name: Install network manager
+      ansible.builtin.apt:
+        name: network-manager
+        state: latest
+      when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+    - name: Install snapd
+      ansible.builtin.package:
+        name: snapd
+        state: present
+    - name: Install LXD
+      community.general.snap:
+        name: lxd
+    - name: Install Multipass
+      community.general.snap:
+        name: multipass
+        classic: true
+      register: multipass
+    - name: Pause for 10 seconds to build let multipass start
+      ansible.builtin.pause:
+        seconds: 10
+      when: multipass.changed
+    - name: Set multipass driver to lxd so we can expose a local address
+      ansible.builtin.shell:
+        cmd: multipass set local.driver=lxd
+      become: yes
+      become_user: iain
