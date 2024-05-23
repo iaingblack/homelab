@@ -27,13 +27,9 @@
       community.general.snap:
         name: multipass
         classic: true
-    - name: Set Multipass driver to LXD
-      community.general.multipass:
-        name: multipass
-        state: present
-        classic: true
-        args:
-          set: local.driver=lxd
+    - name: Set multipass driver to lxd
+      ansible.builtin.shell:
+        cmd: multipass set local.driver=lxd
 
 
 # multipass set local.driver=lxd
