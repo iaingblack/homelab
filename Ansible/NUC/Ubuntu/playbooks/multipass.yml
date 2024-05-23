@@ -20,6 +20,9 @@
       ansible.builtin.package:
         name: snapd
         state: present
+    - name: Install LXD
+      community.general.snap:
+        name: lxd
     - name: Install Multipass
       community.general.snap:
         name: multipass
