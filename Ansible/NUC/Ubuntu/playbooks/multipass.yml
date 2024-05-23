@@ -15,4 +15,7 @@
       ansible.builtin.package:
         name: snapd
         state: present
-      
+    - name: Install foo
+      community.general.snap:
+        name:
+          - multipass
