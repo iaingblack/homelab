@@ -15,7 +15,7 @@
       ansible.builtin.package:
         name: snapd
         state: present
-    - name: Install foo
+    - name: Install Multipass
       community.general.snap:
         name: multipass
         classic: true
