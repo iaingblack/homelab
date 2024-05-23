@@ -30,6 +30,7 @@
     - name: Set multipass driver to lxd
       ansible.builtin.shell:
         cmd: multipass set local.driver=lxd
-
+      become: yes
+      become_user: iain
 
 # multipass set local.driver=lxd
