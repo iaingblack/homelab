@@ -1,0 +1,16 @@
+---
+- hosts: all
+  tasks:
+    # Debian and Ubuntu
+    - name: Debian and Ubuntu OS Upgrade
+      ansible.builtin.apt:
+        upgrade: yes
+      when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+    - name: Install qemu-guest-agent
+      ansible.builtin.apt:
+        name: qemu-guest-agent
+        state: latest
+      when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+
+
+      
