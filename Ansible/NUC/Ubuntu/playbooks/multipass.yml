@@ -27,10 +27,8 @@
       community.general.snap:
         name: multipass
         classic: true
-    - name: Set multipass driver to lxd
+    - name: Set multipass driver to lxd so we can expose a local address
       ansible.builtin.shell:
         cmd: multipass set local.driver=lxd
       become: yes
       become_user: iain
-
-# multipass set local.driver=lxd
