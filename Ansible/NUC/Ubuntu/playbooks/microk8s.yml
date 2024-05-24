@@ -10,12 +10,8 @@
       ansible.builtin.package:
         name: snapd
         state: present
-    - name: Install Multipass
+    - name: Install Microk8s
       community.general.snap:
-        name: multipass
+        name: microk8s
         classic: true
       register: multipass
-    - name: Pause for 10 seconds to build let multipass start
-      ansible.builtin.pause:
-        seconds: 10
-      when: multipass.changed
