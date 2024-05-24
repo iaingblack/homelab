@@ -18,6 +18,9 @@
     - name: Setup permission to use MicroK8s
       become: yes
       command: usermod -a -G microk8s iain
-    - name: Setup permission to use MicroK8s
+    - name: Get Kubeconfig
       become: yes
       command: microk8s config 
+      register: kubeconfig
+    - debug:
+        var: kubeconfig.stdout_lines
