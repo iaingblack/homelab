@@ -15,13 +15,6 @@
         name: microk8s
         classic: true
       register: multipass
-    - name: Set up users
-      ansible.builtin.shell:
-        cmd: |
-          usermod -a -G microk8s iain
-          chown -f -R iain ~/.kube
-    - name: Set up users
-      ansible.builtin.shell:
-        cmd: newgrp microk8s
+    - name: Setup permission to use MicroK8s
       become: yes
-      become_user: iain
+      command: usermod -a -G microk8s iain
