@@ -33,6 +33,7 @@ runcmd:
     - snap install kubectx --classic
     - snap install docker
     - echo "alias kubectl='microk8s kubectl'" >> /root/.bashrc
+    - microk8s disable ha-cluster --force
     - microk8s status --wait-ready
     - mkdir -p /root/.kube
     - microk8s config >> /root/.kube/config
