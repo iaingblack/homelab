@@ -32,7 +32,7 @@ runcmd:
     - sudo ln -s /snap/k9s/current/bin/k9s /snap/bin/
     - snap install kubectx --classic
     - snap install docker
-    - echo "alias kubectl='microk8s kubectl'" >> ~/.bashrc
+    - echo "alias kubectl='microk8s kubectl'" >> /root/.bashrc
     - microk8s status --wait-ready
     - microk8s enable dns hostpath-storage prometheus
     - reboot
