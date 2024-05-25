@@ -1,6 +1,7 @@
 ---
 - hosts: all
   tasks:
+    # https://github.com/UntouchedWagons/Ubuntu-CloudInit-Docs
     - name: Copy the script to the remote host
       copy:
         src: ./scripts/create-ubuntu-2404-microk8s-template.sh
