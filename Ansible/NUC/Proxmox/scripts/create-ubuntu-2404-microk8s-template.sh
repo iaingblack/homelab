@@ -34,7 +34,9 @@ runcmd:
     - snap install docker
     - echo "alias kubectl='microk8s kubectl'" >> /root/.bashrc
     - microk8s status --wait-ready
+    - mkdir -p /root/.kube
     - microk8s config >> /root/.kube/config
+    - mkdir -p ~/.kube
     - microk8s config >> ~/.kube/config
     - microk8s enable dns hostpath-storage prometheus
     - reboot
