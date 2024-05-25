@@ -7,7 +7,7 @@ set -x
 wget -qN https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img
 qemu-img resize noble-server-cloudimg-amd64.img 64G
 qm destroy $VMID
-qm create $VMID --name "ubuntu-noble-template" --ostype l26 \
+qm create $VMID --name "ubuntu-2404-template" --ostype l26 \
     --memory 2048 --balloon 0 \
     --agent 1 \
     --bios ovmf --machine q35 --efidisk0 $STORAGE:0,pre-enrolled-keys=0 \

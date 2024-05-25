@@ -1,0 +1,11 @@
+---
+- hosts: all
+  tasks:
+    - name: Copy the script to the remote host
+      copy:
+        src: ./scripts/create-ubuntu-2404-microk8s-template.sh
+        dest: /tmp/create-ubuntu-2404-microk8s-template.sh
+        mode: '0755'  # Ensure the script is executable
+
+    - name: Execute the script
+      shell: /tmp/create-ubuntu-2404-microk8s-template.sh
