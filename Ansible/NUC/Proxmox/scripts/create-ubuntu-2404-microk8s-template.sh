@@ -34,6 +34,8 @@ runcmd:
     - snap install docker
     - echo "alias kubectl='microk8s kubectl'" >> /root/.bashrc
     - microk8s status --wait-ready
+    - microk8s config >> /root/.kube/config
+    - microk8s config >> ~/.kube/config
     - microk8s enable dns hostpath-storage prometheus
     - reboot
 # Taken from https://forum.proxmox.com/threads/combining-custom-cloud-init-with-auto-generated.59008/page-3#post-428772
