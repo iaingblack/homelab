@@ -1,0 +1,25 @@
+---
+- hosts: localhost
+  gather_facts: false
+  vars:
+    ansible_python_interpreter: '{{ ansible_playbook_python }}'
+    image_name: hello-go
+
+
+  pre_tasks:
+    - name: Check Minikube's status.
+      command: microk8s status
+      register: microk8s_status
+      changed_when: false
+      ignore_errors: true
+
+    - name: Start Minikube if it's not running.
+      command: microk8s start
+      when: "not minikube_status.stdout or 'microk8s is running' not in minikube_status.stdout"
+
+
+# kubectl create namespace argocd
+# kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+# kubectl port-forward svc/argocd-server -n argocd 8080:443
+# argocd admin initial-password -n argocd
+# argocd login localhost:8080
