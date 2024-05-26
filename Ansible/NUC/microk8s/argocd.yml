@@ -15,7 +15,7 @@
 
     - name: Start Minikube if it's not running.
       command: microk8s start
-      when: "not minikube_status.stdout or 'microk8s is running' not in minikube_status.stdout"
+      when: "not microk8s_status.stdout or 'microk8s is running' not in microk8s_status.stdout"
 
 
 # kubectl create namespace argocd
