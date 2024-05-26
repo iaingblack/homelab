@@ -1,5 +1,5 @@
 ---
-- hosts: localhost
+- hosts: all
   gather_facts: false
   vars:
     ansible_python_interpreter: '{{ ansible_playbook_python }}'
@@ -7,7 +7,6 @@
     microk8s_cmd: '/snap/bin/microk8s'
 
   pre_tasks:
-
     - name: Wait to Microk8s to be ready and check addons
       ansible.builtin.shell: /snap/bin/microk8s status --wait-ready --format yaml
       register: microk8s_output
