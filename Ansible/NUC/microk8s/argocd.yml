@@ -2,14 +2,20 @@
 - hosts: all
   gather_facts: false
   vars:
-    ansible_python_interpreter: '{{ ansible_playbook_python }}'
     image_name: hello-go
     microk8s_cmd: '/snap/bin/microk8s'
+    k8s_namespace: argocd
+    argo_install_url: 'https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml'
+    argo_port: 8080
+    kubectl_command: 'microk8s kubectl'
+    microk8s_kubeconfig: /root/.kube/config-microk8s
 
   pre_tasks:
-    - name: Wait to Microk8s to be ready and check addons
-      ansible.builtin.shell: /snap/bin/microk8s status --wait-ready --format yaml
-      register: microk8s_output
+    # Installs some pre-reqs on the remote host
+    - name: Install Python3 Kubernetes client
+      ansible.builtin.apt:
+        name: python3-kubernetes
+        state: present
 
     - name: Check MicroK8s status
       ansible.builtin.shell:
@@ -23,8 +29,60 @@
         cmd: "{{ microk8s_cmd }} start"
       when: "not microk8s_status.stdout or 'microk8s is running' not in microk8s_status.stdout"
 
-# kubectl create namespace argocd
-# kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
-# kubectl port-forward svc/argocd-server -n argocd 8080:443
-# argocd admin initial-password -n argocd
-# argocd login localhost:8080
+  tasks:
+    - name: Ensure Kubernetes namespace exists
+      kubernetes.core.k8s:
+        api_version: v1
+        kind: Namespace
+        name: "{{ k8s_namespace }}"
+        state: present
+
+    - name: Create Microk8s Kubeconfig
+      ansible.builtin.shell:
+        cmd: "/snap/bin/microk8s config > {{ microk8s_kubeconfig }}"
+        creates: "{{ microk8s_kubeconfig }}"
+
+    # https://github.com/Farzy/self-config/blob/32f1ac1389d57af7044ab90575e5212b851db51b/ansible/roles/microk8s/tasks/argocd.yml
+    - name: Add ArgoCD Helm repository
+      kubernetes.core.helm_repository:
+        kubeconfig: "{{ microk8s_kubeconfig }}"
+        repo_name: argo
+        repo_url: https://argoproj.github.io/argo-helm
+
+    - name: Install ArgoCD
+      kubernetes.core.helm:
+        kubeconfig: "{{ microk8s_kubeconfig }}"
+        chart_ref: argo/argo-cd
+        # chart_version: "{{ argocd_version }}"
+        release_name: argocd
+        release_namespace: argocd
+        create_namespace: true
+        update_repo_cache: true
+        wait: true
+        values: "{{ lookup('template', 'templates/argocd-helm-values.yml.j2', variable_start_string='{!', variable_end_string='!}') | from_yaml }}"
+
+    - name: Create HTTPS Certificate
+      kubernetes.core.k8s:
+        kubeconfig: "{{ microk8s_kubeconfig }}"
+        state: present
+        definition: "{{ lookup('file', 'files/argocd-server-https-cert.yml') | from_yaml_all }}"
+
+    - name: Create GRPC Certificate
+      kubernetes.core.k8s:
+        kubeconfig: "{{ microk8s_kubeconfig }}"
+        state: present
+        definition: "{{ lookup('file', 'files/argocd-server-grpc-cert.yml') | from_yaml_all }}"
+
+    - name: Create ArgoCD monitoring in Prometheus
+      kubernetes.core.k8s:
+        kubeconfig: "{{ microk8s_kubeconfig }}"
+        state: present
+        definition: "{{ lookup('file', 'files/argocd-alertmanager.rules.yml') | from_yaml_all }}"
+      tags:
+        - prometheus
+
+    # kubectl create namespace argocd
+    # kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+    # kubectl port-forward svc/argocd-server -n argocd 8080:443
+    # argocd admin initial-password -n argocd
+    # argocd login localhost:8080
