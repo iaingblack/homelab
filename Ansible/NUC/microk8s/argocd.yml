@@ -8,13 +8,13 @@
 
   pre_tasks:
     - name: Check Minikube's status.
-      command: microk8s status
+      command: /snap/bin/microk8s status
       register: microk8s_status
       changed_when: false
       ignore_errors: true
 
     - name: Start Minikube if it's not running.
-      command: microk8s start
+      command: /snap/bin/microk8s start
       when: "not microk8s_status.stdout or 'microk8s is running' not in microk8s_status.stdout"
 
 
