@@ -20,5 +20,5 @@
         dest: /tmp/create-ubuntu-2404-template.sh
         mode: '0755'  # Ensure the script is executable
 
-    - name: Execute the script
-      shell: /tmp/create-ubuntu-2404-template.sh
+    # - name: Execute the script
+    #   shell: /tmp/create-ubuntu-2404-template.sh
