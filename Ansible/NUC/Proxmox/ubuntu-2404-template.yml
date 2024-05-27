@@ -5,7 +5,7 @@
   tasks:
     - name: Set incremented value for each host
       set_fact:
-        incremented_value: "{{ base_value | int + ansible_play_hosts.index(inventory_hostname) + 1 }}"
+        VMID: "{{ base_value | int + ansible_play_hosts.index(inventory_hostname) + 1 }}"
 
     - name: Create a shell script with the incremented VMID
       template:
