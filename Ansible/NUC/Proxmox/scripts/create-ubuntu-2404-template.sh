@@ -18,6 +18,7 @@ qm importdisk $VMID noble-server-cloudimg-amd64.img $STORAGE
 qm set $VMID --scsihw virtio-scsi-pci --virtio0 $STORAGE:vm-$VMID-disk-1,discard=on
 qm set $VMID --boot order=virtio0
 qm set $VMID --ide2 $STORAGE:cloudinit
+qm set 100 --ciuser root --cipassword Password1!
 
 mkdir -p /var/lib/vz/snippets
 cat << EOF | tee /var/lib/vz/snippets/ubuntu.yaml

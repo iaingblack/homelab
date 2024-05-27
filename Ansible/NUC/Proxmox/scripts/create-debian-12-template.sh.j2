@@ -19,6 +19,7 @@ qm importdisk $VMID debian-12-generic-amd64.qcow2 $STORAGE
 qm set $VMID --scsihw virtio-scsi-pci --virtio0 $STORAGE:vm-$VMID-disk-1,discard=on
 qm set $VMID --boot order=virtio0
 qm set $VMID --ide2 $STORAGE:cloudinit
+qm set 100 --ciuser root --cipassword Password1!
 
 cat << EOF | tee /var/lib/vz/snippets/debian-12.yaml
 #cloud-config
