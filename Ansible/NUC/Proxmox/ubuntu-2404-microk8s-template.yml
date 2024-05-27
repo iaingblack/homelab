@@ -1,12 +1,22 @@
 ---
 - hosts: all
+  vars:
+    base_value: 9100
   tasks:
+    - name: Set incremented value for each host
+      set_fact:
+        VMID: "{{ base_value | int + ansible_play_hosts.index(inventory_hostname) + 1 }}"
+
+    - name: Print incremented value
+      debug:
+        msg: "The incremented value for {{ inventory_hostname }} is {{ VMID }}"
+
     # https://github.com/UntouchedWagons/Ubuntu-CloudInit-Docs
-    - name: Copy the script to the remote host
-      copy:
-        src: ./scripts/create-ubuntu-2404-microk8s-template.sh
+    - name: Create a shell script with the incremented VMID
+      template:
+        src: ./scripts/create-ubuntu-2404-microk8s-template.sh.j2
         dest: /tmp/create-ubuntu-2404-microk8s-template.sh
-        mode: '0755'  # Ensure the script is executable
+        mode: '0755'
 
     - name: Execute the script
       shell: /tmp/create-ubuntu-2404-microk8s-template.sh
