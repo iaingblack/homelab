@@ -5,10 +5,10 @@ STORAGE=local-lvm
 
 set -x
 wget -qN https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img
-qemu-img resize noble-server-cloudimg-amd64.img 64G
+qemu-img resize noble-server-cloudimg-amd64.img 128G
 qm destroy $VMID
 qm create $VMID --name "ubuntu-2404-microk8s-template" --ostype l26 \
-    --memory 3072 --balloon 0 \
+    --memory 4096 --balloon 0 \
     --agent 1 \
     --bios ovmf --machine q35 --efidisk0 $STORAGE:0,pre-enrolled-keys=0 \
     --cpu host --cores 2 --numa 1 \

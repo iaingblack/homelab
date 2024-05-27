@@ -5,7 +5,7 @@ STORAGE=local-lvm
 
 set -x
 wget -qN https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img
-qemu-img resize noble-server-cloudimg-amd64.img 64G
+qemu-img resize noble-server-cloudimg-amd64.img 128G
 qm destroy $VMID
 qm create $VMID --name "ubuntu-2404-template" --ostype l26 \
     --memory 2048 --balloon 0 \

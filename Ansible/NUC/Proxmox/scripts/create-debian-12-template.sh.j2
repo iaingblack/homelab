@@ -6,7 +6,7 @@ STORAGE=local-lvm
 set -x
 rm -f debian-12-generic-amd64.qcow2
 wget -qN https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-generic-amd64.qcow2
-qemu-img resize debian-12-generic-amd64.qcow2 64G
+qemu-img resize debian-12-generic-amd64.qcow2 128G
 qm destroy $VMID
 qm create $VMID --name "debian-12-template" --ostype l26 \
     --memory 2048 --balloon 0 \
