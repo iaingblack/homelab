@@ -7,6 +7,10 @@
       set_fact:
         VMID: "{{ base_value | int + ansible_play_hosts.index(inventory_hostname) + 1 }}"
 
+    - name: Print incremented value
+      debug:
+        msg: "The incremented value for {{ inventory_hostname }} is {{ VMID }}"
+
     - name: Create a shell script with the incremented VMID
       template:
         src: ./scripts/create-ubuntu-2404-template.sh.j2
