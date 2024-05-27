@@ -1,6 +1,18 @@
 ---
 - hosts: all
+  vars:
+    base_value: 9000
   tasks:
+    - name: Set incremented value for each host
+      set_fact:
+        incremented_value: "{{ base_value | int + ansible_play_hosts.index(inventory_hostname) + 1 }}"
+
+    - name: Create a shell script with the incremented VMID
+      template:
+        src: ./scripts/create-ubuntu-2404-template.sh.j2
+        dest: /tmp/create-ubuntu-2404-template.sh
+        mode: '0755'
+
     # https://github.com/UntouchedWagons/Ubuntu-CloudInit-Docs
     - name: Copy the script to the remote host
       copy:
