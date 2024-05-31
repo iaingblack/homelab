@@ -2,6 +2,6 @@
 - hosts: all
   tasks:
     - name: Execute the script
-      shell: bash -c "$(wget -qLO - https://github.com/tteck/Proxmox/raw/main/misc/post-pve-install.sh)"
+      shell: bash -c "$(wget -qLO - https://github.com/tteck/Proxmox/raw/main/misc/post-pve-install.sh)" | bash -s -- -y
       environment:
         TERM: xterm
