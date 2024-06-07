@@ -6,3 +6,5 @@ terraform.tfstate
 key.ppk
 .terraform.lock.hcl
 **/.terraform
+**/output-windows/*
+**/packer_cache/*
