@@ -23,12 +23,12 @@ variable "headless" {
 
 variable "iso_checksum" {
   type    = string
-  default = "sha256:63c0623830d89b302f1f717457026129c014f3d97bd37854d17528f799c7bac5"
+  default = "sha256:3e4fa6d8507b554856fc9ca6079cc402df11a8b79344871669f0251535255325"
 }
 
 variable "iso_url" {
   type    = string
-  default = "c:/ISOs/en-us_windows_server_version_23h2_updated_may_2024_x64_dvd_744fe423.iso"
+  default = "d:/ISOs/windows_server_2022.iso"
 }
 
 source "virtualbox-iso" "windows" {
@@ -39,9 +39,10 @@ source "virtualbox-iso" "windows" {
   headless             = "${var.headless}"
   iso_checksum         = "${var.iso_checksum}"
   iso_url              = "${var.iso_url}"
-  shutdown_command     = "C:/Windows/Panther/Unattend/packer_shutdown.bat"
+  # shutdown_command     = "C:/Windows/Panther/Unattend/packer_shutdown.bat"
+  shutdown_command     = "shutdown /s /t 10 /f /d p:4:1 /c \"Packer Shutdown\""
   shutdown_timeout     = "15m"
-  vboxmanage           = [["modifyvm", "{{ .Name }}", "--memory", "2048"], ["modifyvm", "{{ .Name }}", "--vram", "48"], ["modifyvm", "{{ .Name }}", "--cpus", "2"]]
+  vboxmanage           = [["modifyvm", "{{ .Name }}", "--memory", "4096"], ["modifyvm", "{{ .Name }}", "--vram", "48"], ["modifyvm", "{{ .Name }}", "--cpus", "4"]]
   winrm_password       = "vagrant"
   winrm_timeout        = "12h"
   winrm_username       = "vagrant"
