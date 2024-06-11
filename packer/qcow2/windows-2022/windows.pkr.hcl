@@ -39,6 +39,7 @@ source "virtualbox-iso" "windows" {
   headless             = "${var.headless}"
   iso_checksum         = "${var.iso_checksum}"
   iso_url              = "${var.iso_url}"
+  disk_size            = "24576"
   # shutdown_command     = "C:/Windows/Panther/Unattend/packer_shutdown.bat"
   shutdown_command     = "shutdown /s /t 10 /f /d p:4:1 /c \"Packer Shutdown\""
   shutdown_timeout     = "15m"
