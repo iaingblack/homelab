@@ -34,7 +34,7 @@ spec:
       volumes:
       - name: disk0
         persistentVolumeClaim:
-          claimName: win2022
+          claimName: kubevirt-win2022
       # - cloudInitNoCloud:
       #     userData: |
       #       #cloud-config

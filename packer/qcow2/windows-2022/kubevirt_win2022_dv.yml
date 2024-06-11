@@ -11,7 +11,7 @@ spec:
       - ReadWriteOnce
     resources:
       requests:
-        storage: 20Gi
+        storage: 52Gi
   source:
     http:
-      url: "http://localhost/QCOW/QCOW/windows-2022.qcow2"
+      url: "http://192.168.1.108/QCOW/windows-2022.qcow2"

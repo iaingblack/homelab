@@ -39,12 +39,47 @@ spec:
       url: "http://localhost/QCOW/QCOW/windows-2022.qcow2"
 ```
 
-kubectl create -f win2022.yml
+kubectl create -f kubevirt_win2022_pvc.yml
+kubectl get pvc
+
+kubectl create -f kubevirt_win2022_dv.yml
+kubectl get dv
+
+kubectl create -f kubevirt_win2022_vm.yml  
+kubectl get vm vm1
+
+
+kubectl describe dv - Not all of the VMI's DVs are ready
+
+kubectl describe vm vm1
+
+kubectl apply  -f kubevirt_win2022_pvc.yml
+kubectl apply  -f kubevirt_win2022_dv.yml
+kubectl apply  -f kubevirt_win2022_vm.yml
+kubectl delete -f kubevirt_win2022_vm.yml
+kubectl delete -f kubevirt_win2022_dv.yml
+kubectl delete -f kubevirt_win2022_pvc.yml
+
 
 
 kubectl get pvc win2022 -o yaml
 kubectl get pod # Make note of the pod name assigned to the import process
-kubectl logs -f importer-fedora-pnbqh   # Substitute your importer-fedora pod name here.
+kubectl logs -f virt-launcher-vm1-df2q2   # Substitute your importer-fedora pod name here.
 
 kubectl describe pvc win2022 -n default
 
+ kubectl describe vm vm1
+
+IIS
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <system.webServer>
+        <directoryBrowse enabled="true" />
+        <staticContent>
+            <mimeMap fileExtension=".qcow2" mimeType="application/octet-stream" />
+        </staticContent>
+    </system.webServer>
+</configuration>
+```
