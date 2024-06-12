@@ -32,6 +32,7 @@ variable "iso_url" {
 }
 
 source "virtualbox-iso" "windows" {
+  vm_name              = "win2022"
   communicator         = "winrm"
   floppy_files         = ["files/Autounattend.xml", "scripts/enable-winrm.ps1"]
   guest_additions_mode = "${var.guest_additions_mode}"

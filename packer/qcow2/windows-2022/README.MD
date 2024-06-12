@@ -19,6 +19,8 @@ cd output-windows
 
 qemu-img convert -f vmdk -O qcow2  packer-windows-1717789547-disk001.vmdk windows-2022.qcow2
 
+To convert back
+qemu-img convert -f qcow2 windows-2022.qcow2 -O vdi windows-2022.vdi
 
 Then Kubevirt bit
 https://kubevirt.io/user-guide/storage/containerized_data_importer/
@@ -53,12 +55,7 @@ kubectl describe dv - Not all of the VMI's DVs are ready
 
 kubectl describe vm vm1
 
-kubectl apply  -f kubevirt_win2022_pvc.yml
-kubectl apply  -f kubevirt_win2022_dv.yml
-kubectl apply  -f kubevirt_win2022_vm.yml
-kubectl delete -f kubevirt_win2022_vm.yml
-kubectl delete -f kubevirt_win2022_dv.yml
-kubectl delete -f kubevirt_win2022_pvc.yml
+Might be useful: https://kubevirt.io/2022/KubeVirt-installing_Microsoft_Windows_11_from_an_iso.html
 
 
 

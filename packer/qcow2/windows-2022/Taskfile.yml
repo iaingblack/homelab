@@ -1,16 +1,16 @@
 version: '3'
 
 tasks:
-
+  platforms: [windows]
   test:
-    platforms: [windows]
     cmds:
       - echo 'Running command on Windows'
 
-  build:
+  build-image:
     cmds:
       - powershell -command Remove-Item -Path 'output-windows' -Recurse -Force
       - packer build ./windows.pkr.hcl
+      - qemu-img convert -f vmdk -O qcow2  ./output-windows/win2022-disk001.vmdk D:/QCOW/windows-2022.qcow2
 
   create-vm:
     cmds:
