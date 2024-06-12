@@ -40,23 +40,26 @@ source "virtualbox-iso" "windows" {
   iso_checksum         = "${var.iso_checksum}"
   iso_url              = "${var.iso_url}"
   disk_size            = "24576"
-  # shutdown_command     = "C:/Windows/Panther/Unattend/packer_shutdown.bat"
-  shutdown_command     = "shutdown /s /t 10 /f /d p:4:1 /c \"Packer Shutdown\""
   shutdown_timeout     = "15m"
   vboxmanage           = [["modifyvm", "{{ .Name }}", "--memory", "4096"], ["modifyvm", "{{ .Name }}", "--vram", "48"], ["modifyvm", "{{ .Name }}", "--cpus", "4"]]
   winrm_password       = "vagrant"
   winrm_timeout        = "12h"
   winrm_username       = "vagrant"
+  # Can be handy to manually inspect the VM post creation
+  keep_registered      = "true"
+  # Should really be the sysprep command, to find...
+  # shutdown_command     = "C:/Windows/Panther/Unattend/packer_shutdown.bat"
+  shutdown_command     = "shutdown /s /t 10 /f /d p:4:1 /c \"Packer Shutdown\""
 }
 
 build {
   sources = ["source.virtualbox-iso.windows"]
 
-  # provisioner "powershell" {
-  #   elevated_password = "vagrant"
-  #   elevated_user     = "vagrant"
-  #   script            = "scripts/windows-updates.ps1"
-  # }
+  provisioner "powershell" {
+    elevated_password = "vagrant"
+    elevated_user     = "vagrant"
+    script            = "scripts/customise.ps1"
+  }
 
   provisioner "windows-restart" {
     restart_timeout = "15m"

@@ -1,0 +1,41 @@
+version: '3'
+
+tasks:
+
+  test:
+    platforms: [windows]
+    cmds:
+      - echo 'Running command on Windows'
+
+  build:
+    cmds:
+      - powershell -command Remove-Item -Path 'output-windows' -Recurse -Force
+      - packer build ./windows.pkr.hcl
+
+  create-vm:
+    cmds:
+      - kubectl apply  -f kubevirt_win2022_pvc.yml
+      - kubectl apply  -f kubevirt_win2022_dv.yml
+      - kubectl apply  -f kubevirt_win2022_vm.yml
+
+  status-vm:
+    cmds:
+      - kubectl describe vm vm1
+
+  vnc-vm:
+    cmds:
+      - virtctl vnc vm1
+
+  stop-vm:
+    cmds:
+      - virtctl stop vm1
+
+  start-vm:
+    cmds:
+      - virtctl start vm1
+
+  delete-vm:
+    cmds:
+      - kubectl delete  -f kubevirt_win2022_pvc.yml
+      - kubectl delete  -f kubevirt_win2022_dv.yml
+      - kubectl delete  -f kubevirt_win2022_vm.yml
