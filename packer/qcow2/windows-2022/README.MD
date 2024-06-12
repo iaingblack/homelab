@@ -1,6 +1,9 @@
 Really good guide
 
 http://virtualizationhowto.com/2021/06/automated-windows-server-2022-packer-build?utm_source=pocket_shared
+https://github.com/mwrock/packer-templatess
+https://learn.microsoft.com/en-us/azure/virtual-machines/windows/build-image-with-packer
+https://github.com/StefanScherer/packer-windows
 
 Linux Images: https://fedoraproject.org/cloud/downloads
 
