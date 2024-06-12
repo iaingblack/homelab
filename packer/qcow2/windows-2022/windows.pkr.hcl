@@ -47,10 +47,11 @@ source "virtualbox-iso" "windows" {
   winrm_timeout        = "12h"
   winrm_username       = "vagrant"
   # Can be handy to manually inspect the VM post creation
-  keep_registered      = "true"
+  keep_registered      = "false"
   # Should really be the sysprep command, to find...
   # shutdown_command     = "C:/Windows/Panther/Unattend/packer_shutdown.bat"
-  shutdown_command     = "shutdown /s /t 10 /f /d p:4:1 /c \"Packer Shutdown\""
+  # shutdown_command     = "shutdown /s /t 10 /f /d p:4:1 /c \"Packer Shutdown\""
+  shutdown_command     = "C:/Windows/System32/Sysprep/sysprep.exe /generalize /shutdown /oobe /quiet"
 }
 
 build {
