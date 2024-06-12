@@ -48,40 +48,38 @@ source "virtualbox-iso" "windows" {
   winrm_username       = "vagrant"
   # Can be handy to manually inspect the VM post creation
   keep_registered      = "false"
-  # Should really be the sysprep command, to find...
-  # shutdown_command     = "C:/Windows/Panther/Unattend/packer_shutdown.bat"
   # shutdown_command     = "shutdown /s /t 10 /f /d p:4:1 /c \"Packer Shutdown\""
   shutdown_command     = "a:/sysprep.bat"
-  # shutdown_command     = "C:/windows/system32/sysprep/sysprep.exe /generalize /oobe /quiet /shutdown"
-  # shutdown_command   = "powershell -Command \"& {Start-Process 'C:\\Windows\\System32\\Sysprep\\sysprep.exe' -ArgumentList '/generalize /shutdown /oobe /quiet' -NoNewWindow -Wait}\""
-
 }
 
 build {
   sources = ["source.virtualbox-iso.windows"]
 
-  # provisioner "powershell" {
-  #   elevated_password = "vagrant"
-  #   elevated_user     = "vagrant"
-  #   script            = "scripts/customise.ps1"
-  # }
+  provisioner "powershell" {
+    elevated_password = "vagrant"
+    elevated_user     = "vagrant"
+    script            = "scripts/customise.ps1"
+  }
 
-  # provisioner "powershell" {
-  #   inline = ["& $env:SystemRoot\\System32\\Sysprep\\Sysprep.exe /oobe /generalize /quiet /quit"]
-  # }
-  # provisioner "windows-restart" {
-  #   restart_timeout = "15m"
-  # }
+  provisioner "powershell" {
+    elevated_password = "vagrant"
+    elevated_user     = "vagrant"
+    script            = "scripts/windows-updates.ps1"
+  }
 
-  # provisioner "powershell" {
-  #   elevated_password = "vagrant"
-  #   elevated_user     = "vagrant"
-  #   script            = "scripts/after-reboot.ps1"
-  # }
+  provisioner "windows-restart" {
+    restart_timeout = "15m"
+  }
 
-  # provisioner "powershell" {
-  #   elevated_password = "vagrant"
-  #   elevated_user     = "vagrant"
-  #   script            = "scripts/cleanup.ps1"
-  # }
+  provisioner "powershell" {
+    elevated_password = "vagrant"
+    elevated_user     = "vagrant"
+    script            = "scripts/after-reboot.ps1"
+  }
+
+  provisioner "powershell" {
+    elevated_password = "vagrant"
+    elevated_user     = "vagrant"
+    script            = "scripts/cleanup.ps1"
+  }
 }
