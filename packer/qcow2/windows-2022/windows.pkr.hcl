@@ -34,7 +34,7 @@ variable "iso_url" {
 source "virtualbox-iso" "windows" {
   vm_name              = "win2022"
   communicator         = "winrm"
-  floppy_files         = ["files/Autounattend.xml", "scripts/sysprep.bat"]
+  floppy_files         = ["files/Autounattend.xml", "scripts/enable-winrm.ps1", "scripts/sysprep.bat"]
   guest_additions_mode = "${var.guest_additions_mode}"
   guest_os_type        = "Windows2016_64"
   headless             = "${var.headless}"
@@ -47,7 +47,7 @@ source "virtualbox-iso" "windows" {
   winrm_timeout        = "12h"
   winrm_username       = "vagrant"
   # Can be handy to manually inspect the VM post creation
-  keep_registered      = "false"
+  keep_registered      = "true"
   # shutdown_command     = "shutdown /s /t 10 /f /d p:4:1 /c \"Packer Shutdown\""
   shutdown_command     = "a:/sysprep.bat"
 }
