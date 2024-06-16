@@ -7,14 +7,14 @@ metadata:
   generation: 1
   labels:
     kubevirt.io/os: windows
-  name: vm1
+  name: win2022-vm
 spec:
   running: true
   template:
     metadata:
       creationTimestamp: null
       labels:
-        kubevirt.io/domain: vm1
+        kubevirt.io/domain: win2022-vm
     spec:
       domain:
         cpu:
