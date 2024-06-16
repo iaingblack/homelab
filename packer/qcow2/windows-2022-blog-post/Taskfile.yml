@@ -1,0 +1,41 @@
+version: '3'
+
+tasks:
+  build-and-run:
+    - task: build-image
+    - task: create-vm
+
+  build-image:
+    cmds:
+      - powershell -command 'if (Test-Path 'output-windows') { Remove-Item -Path 'output-windows' -Recurse -Force }'
+      - powershell -command 'if (Test-Path "$env:USERPROFILE\VirtualBox VMs\win2022") { Remove-Item -Path "$env:USERPROFILE\VirtualBox VMs\win2022" -Recurse -Force }'
+      - packer build ./windows.pkr.hcl
+      - qemu-img convert -f vmdk -O qcow2  ./output-windows/win2022-disk001.vmdk D:/QCOW/windows-2022.qcow2
+
+  create-vm:
+    cmds:
+      - kubectl apply  -f kubevirt_win2022_pvc.yml
+      - kubectl apply  -f kubevirt_win2022_dv.yml
+      - kubectl apply  -f kubevirt_win2022_vm.yml
+
+  status-vm:
+    cmds:
+      - kubectl describe vm win2022-vm
+
+  vnc-vm:
+    cmds:
+      - virtctl vnc win2022-vm
+
+  stop-vm:
+    cmds:
+      - virtctl stop win2022-vm
+
+  start-vm:
+    cmds:
+      - virtctl start win2022-vm
+
+  delete-vm:
+    cmds:
+      - kubectl delete  -f kubevirt_win2022_pvc.yml
+      - kubectl delete  -f kubevirt_win2022_dv.yml
+      - kubectl delete  -f kubevirt_win2022_vm.yml
