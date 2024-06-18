@@ -1,5 +1,4 @@
 Get-NetConnectionProfile | Set-NetConnectionProfile -NetworkCategory Private
-
 Enable-PSRemoting -Force
 winrm quickconfig -q
 winrm quickconfig -transport:http

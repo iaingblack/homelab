@@ -26,9 +26,7 @@ source "virtualbox-iso" "windows" {
   winrm_password       = "vagrant"
   winrm_timeout        = "12h"
   winrm_username       = "vagrant"
-  # Can be handy to manually inspect the VM post creation
   keep_registered      = "false"
-  # shutdown_command     = "shutdown /s /t 10 /f /d p:4:1 /c \"Packer Shutdown\""
   shutdown_command     = "a:/sysprep.bat"
 }
 
@@ -50,17 +48,5 @@ build {
 
   provisioner "windows-restart" {
     restart_timeout = "15m"
-  }
-
-  provisioner "powershell" {
-    elevated_password = "vagrant"
-    elevated_user     = "vagrant"
-    script            = "scripts/after-reboot.ps1"
-  }
-
-  provisioner "powershell" {
-    elevated_password = "vagrant"
-    elevated_user     = "vagrant"
-    script            = "scripts/cleanup.ps1"
   }
 }
