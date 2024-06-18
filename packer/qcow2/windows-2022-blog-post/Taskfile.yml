@@ -23,11 +23,10 @@ tasks:
     cmds:
       - kubectl apply  -f kubevirt_win2022_svc.yml
 
-  
   create-and-config-kind-cluster:
     - task: create-kind-cluster
     - task: install-crds-kind-cluster
-    
+
   # https://stackoverflow.com/questions/62432961/how-to-use-nodeport-with-kind
   create-kind-cluster:
     cmds:
@@ -72,4 +71,5 @@ tasks:
     cmds:
       - kubectl delete  -f kubevirt_win2022_pvc.yml
       - kubectl delete  -f kubevirt_win2022_dv.yml
+      - kubectl delete  -f kubevirt_win2022_svc.yml
       - kubectl delete  -f kubevirt_win2022_vm.yml
