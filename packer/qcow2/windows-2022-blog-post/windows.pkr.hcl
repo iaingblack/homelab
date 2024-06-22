@@ -14,7 +14,7 @@ packer {
 source "virtualbox-iso" "windows" {
   vm_name              = "win2022"
   communicator         = "winrm"
-  floppy_files         = ["files/Autounattend.xml", "scripts/enable-winrm.ps1", "scripts/sysprep.bat"]
+  floppy_files         = ["files/Autounattend.xml", "scripts/enable-winrm.ps1", "scripts/sysprep_and_shutdown.bat", "scripts/shutdown.bat"]
   guest_additions_mode = "attach"
   guest_os_type        = "Windows2016_64"
   headless             = "false"
@@ -27,7 +27,8 @@ source "virtualbox-iso" "windows" {
   winrm_timeout        = "12h"
   winrm_username       = "vagrant"
   keep_registered      = "false"
-  shutdown_command     = "a:/sysprep.bat"
+  # shutdown_command     = "a:/sysprep_and_shutdown.bat"
+  shutdown_command     = "a:/shutdown.bat"
 }
 
 

@@ -1,11 +1,40 @@
 version: '3'
 
 tasks:
-  build-and-run:
-    - task: build-image
+  # KIND CLUSTER
+  create-and-config-kind-cluster:
+    - task: create-kind-cluster
+    - task: install-crds-kind-cluster
+
+  create-kind-cluster:
+    cmds:
+      - kind create cluster --name kubevirt --config=kind_config.yml
+
+  install-crds-kind-cluster:
+    cmds:
+      - kubectl create -f https://github.com/kubevirt/containerized-data-importer/releases/download/v1.59.0/cdi-operator.yaml
+      - kubectl create -f https://github.com/kubevirt/containerized-data-importer/releases/download/v1.59.0/cdi-cr.yaml
+      - kubectl create -f https://github.com/kubevirt/kubevirt/releases/download/v1.2.2/kubevirt-operator.yaml
+      - kubectl create -f https://github.com/kubevirt/kubevirt/releases/download/v1.2.2/kubevirt-cr.yaml
+  
+  delete-kind-cluster:
+    cmds:
+      - kind delete cluster --name kubevirt
+  
+  get-kind-cluster-config:
+    cmds:  
+      - kubectl cluster-info --context kind-kubevirt
+
+  nodeips-kind-cluster:
+    cmds:  
+      - kubectl get nodes -o wide
+
+  # KUBEVIRT
+  build-and-run-vm:
+    - task: build-image-vm
     - task: create-vm
 
-  build-image:
+  build-image-vm:
     cmds:
       - powershell -command 'if (Test-Path 'output-windows') { Remove-Item -Path 'output-windows' -Recurse -Force }'
       - powershell -command 'if (Test-Path "$env:USERPROFILE\VirtualBox VMs\win2022") { Remove-Item -Path "$env:USERPROFILE\VirtualBox VMs\win2022" -Recurse -Force }'
@@ -19,37 +48,9 @@ tasks:
       - kubectl apply  -f kubevirt_win2022_vm.yml
       - kubectl apply  -f kubevirt_win2022_svc.yml
 
-  create-svc:
+  create-vm-svc:
     cmds:
       - kubectl apply  -f kubevirt_win2022_svc.yml
-
-  create-and-config-kind-cluster:
-    - task: create-kind-cluster
-    - task: install-crds-kind-cluster
-
-  # https://stackoverflow.com/questions/62432961/how-to-use-nodeport-with-kind
-  create-kind-cluster:
-    cmds:
-      - kind create cluster --name kubevirt --config=kind_config.yml
-  
-  delete-kind-cluster:
-    cmds:
-      - kind delete cluster --name kubevirt
-  
-  config-kind-cluster:
-    cmds:  
-      - kubectl cluster-info --context kind-kubevirt
-
-  nodeips-kind-cluster:
-    cmds:  
-      - kubectl get nodes -o wide
-
-  install-crds-kind-cluster:
-    cmds:
-      - kubectl create -f https://github.com/kubevirt/containerized-data-importer/releases/download/v1.59.0/cdi-operator.yaml
-      - kubectl create -f https://github.com/kubevirt/containerized-data-importer/releases/download/v1.59.0/cdi-cr.yaml
-      - kubectl create -f https://github.com/kubevirt/kubevirt/releases/download/v1.2.2/kubevirt-operator.yaml
-      - kubectl create -f https://github.com/kubevirt/kubevirt/releases/download/v1.2.2/kubevirt-cr.yaml
   
   status-vm:
     cmds:
