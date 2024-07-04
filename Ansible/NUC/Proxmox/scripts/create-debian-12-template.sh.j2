@@ -16,7 +16,9 @@ qm create $VMID --name "debian-12-template" --ostype l26 \
     --vga serial0 --serial0 socket  \
     --net0 virtio,bridge=vmbr0,mtu=1 \
     --scsihw virtio-scsi-pci
+
 qm importdisk $VMID debian-12-generic-amd64.qcow2 $STORAGE
+
 # qm set $VMID --scsihw virtio-scsi-pci --virtio0 local:9201/vm-9201-disk-1.raw,discard=on
 qm set $VMID --scsihw virtio-scsi-pci --virtio0 $STORAGE:$VMID/vm-$VMID-disk-1.raw,discard=on
 qm set $VMID --boot order=virtio0

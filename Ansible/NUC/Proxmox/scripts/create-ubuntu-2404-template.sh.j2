@@ -17,6 +17,7 @@ qm create $VMID --name "ubuntu-2404-template" --ostype l26 \
     --scsihw virtio-scsi-pci
 
 qm importdisk $VMID noble-server-cloudimg-amd64.img $STORAGE
+
 # qm set $VMID --scsihw virtio-scsi-pci --virtio0 local:9201/vm-9201-disk-1.raw,discard=on
 qm set $VMID --scsihw virtio-scsi-pci --virtio0 $STORAGE:$VMID/vm-$VMID-disk-1.raw,discard=on
 qm set $VMID --boot order=virtio0
