@@ -7,10 +7,11 @@
     - name: Set incremented value for each host
       set_fact:
         VMID: "{{ base_value | int + ansible_play_hosts.index(inventory_hostname) + 1 }}"
+        storage: "{{ storage }}"
 
     - name: Print incremented value
       debug:
-        msg: "The incremented value for {{ inventory_hostname }} is {{ VMID }}"
+        msg: "The incremented value for {{ inventory_hostname }} is {{ VMID }}, and storage is {{ storage }}"
 
     # https://github.com/UntouchedWagons/Ubuntu-CloudInit-Docs
     - name: Create a shell script with the incremented VMID
