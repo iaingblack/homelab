@@ -21,7 +21,7 @@ qm importdisk $VMID noble-server-cloudimg-amd64.img $STORAGE
 # qm set $VMID --scsihw virtio-scsi-pci --virtio0 local:9201/vm-9201-disk-1.raw,discard=on
 # Sometimes it has .raw, and on other proxmox servers it doesn't... One will fail, one will work
 qm set $VMID --scsihw virtio-scsi-pci --virtio0 $STORAGE:$VMID/vm-$VMID-disk-1.raw,discard=on
-qm set $VMID --scsihw virtio-scsi-pci --virtio0 $STORAGE:$VMID/vm-$VMID-disk-1,discard=on
+qm set $VMID --scsihw virtio-scsi-pci --virtio0 $STORAGE:vm-$VMID-disk-1,discard=on
 
 qm set $VMID --boot order=virtio0
 qm set $VMID --ide2 $STORAGE:cloudinit
