@@ -1,0 +1,133 @@
+{
+  "lockfile_version": "1",
+  "packages": {
+    "azure-cli-extensions.azure-firewall@latest": {
+      "last_modified": "2024-06-12T20:55:33Z",
+      "resolved": "github:NixOS/nixpkgs/a9858885e197f984d92d7fe64e9fff6b2e488d40#azure-cli-extensions.azure-firewall",
+      "source": "devbox-search",
+      "version": "1.0.1",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/g66swvbrplcl1z93223phxbjjd366bwk-python3.11-azure-firewall-1.0.1",
+              "default": true
+            },
+            {
+              "name": "dist",
+              "path": "/nix/store/b1abfl0q9a4f66baczdgsi2c9h7rblxz-python3.11-azure-firewall-1.0.1-dist"
+            }
+          ],
+          "store_path": "/nix/store/g66swvbrplcl1z93223phxbjjd366bwk-python3.11-azure-firewall-1.0.1"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/61jg2294cmlhqgl7i8c5537jv8vamd5s-python3.11-azure-firewall-1.0.1",
+              "default": true
+            },
+            {
+              "name": "dist",
+              "path": "/nix/store/zf332hhqqr943h946fgd5vrsc9wlmrs1-python3.11-azure-firewall-1.0.1-dist"
+            }
+          ],
+          "store_path": "/nix/store/61jg2294cmlhqgl7i8c5537jv8vamd5s-python3.11-azure-firewall-1.0.1"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/dlx291zpdbddg1i37fvah7l9viag9pkp-python3.11-azure-firewall-1.0.1",
+              "default": true
+            },
+            {
+              "name": "dist",
+              "path": "/nix/store/kal26r6lb9nrp8vsbm9vmaa62azdyak6-python3.11-azure-firewall-1.0.1-dist"
+            }
+          ],
+          "store_path": "/nix/store/dlx291zpdbddg1i37fvah7l9viag9pkp-python3.11-azure-firewall-1.0.1"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/r0xqif38iccjh76rgladfvlgjmpk66r0-python3.11-azure-firewall-1.0.1",
+              "default": true
+            },
+            {
+              "name": "dist",
+              "path": "/nix/store/d5r8cz0xpi456n84yvjcd5n9mcy1ydai-python3.11-azure-firewall-1.0.1-dist"
+            }
+          ],
+          "store_path": "/nix/store/r0xqif38iccjh76rgladfvlgjmpk66r0-python3.11-azure-firewall-1.0.1"
+        }
+      }
+    },
+    "azure-cli@latest": {
+      "last_modified": "2024-06-21T06:40:32Z",
+      "resolved": "github:NixOS/nixpkgs/ed0af8c19f55bede71dc9c2002185cf228339901#azure-cli",
+      "source": "devbox-search",
+      "version": "2.61.0",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/43d85xzk6s14nam96sykm03pih159s5q-python3.11-azure-cli-2.61.0",
+              "default": true
+            },
+            {
+              "name": "dist",
+              "path": "/nix/store/kq08agnidqrri39mylg8x92agb1my0sq-python3.11-azure-cli-2.61.0-dist"
+            }
+          ],
+          "store_path": "/nix/store/43d85xzk6s14nam96sykm03pih159s5q-python3.11-azure-cli-2.61.0"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/5fxvsr7spm2dcaawcxa4hhidcaqzfvph-python3.11-azure-cli-2.61.0",
+              "default": true
+            },
+            {
+              "name": "dist",
+              "path": "/nix/store/zjydaa420fcbz9sckdrvbjb1vifbbznk-python3.11-azure-cli-2.61.0-dist"
+            }
+          ],
+          "store_path": "/nix/store/5fxvsr7spm2dcaawcxa4hhidcaqzfvph-python3.11-azure-cli-2.61.0"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/l3wxgdbcjw0hrpds07pzx9d3r1l3hdk2-python3.11-azure-cli-2.61.0",
+              "default": true
+            },
+            {
+              "name": "dist",
+              "path": "/nix/store/6w7plq9mvy3k0mdzkccm8i5xc2agaa5i-python3.11-azure-cli-2.61.0-dist"
+            }
+          ],
+          "store_path": "/nix/store/l3wxgdbcjw0hrpds07pzx9d3r1l3hdk2-python3.11-azure-cli-2.61.0"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/s7gz2l9n0nk7qi9rwmidbfw4xz7npsvn-python3.11-azure-cli-2.61.0",
+              "default": true
+            },
+            {
+              "name": "dist",
+              "path": "/nix/store/cdil8r8j929d92v13hf2pl8xxy785if8-python3.11-azure-cli-2.61.0-dist"
+            }
+          ],
+          "store_path": "/nix/store/s7gz2l9n0nk7qi9rwmidbfw4xz7npsvn-python3.11-azure-cli-2.61.0"
+        }
+      }
+    }
+  }
+}
