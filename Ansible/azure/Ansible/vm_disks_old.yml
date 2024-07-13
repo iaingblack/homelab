@@ -1,0 +1,70 @@
+---
+
+
+- name: Get the VMs into azure_vms host group
+  hosts: localhost
+  connection: local
+  vars_files:
+    - "./envs/{{ env }}"
+  tasks:
+    - include_role:
+        name: vm_disks
+
+- name: Setup Extra Disks on the VM
+  hosts: azure_vms
+  gather_facts: no
+  tasks:
+    - name: Display azure_vms generated host list
+      debug:
+        var: "{{ item.name }}"
+      with_items: "{{ azure_vms }}"
+#     - name: Gather information about the VM
+#       azure.azcollection.azure_rm_virtualmachine_info:
+#         resource_group: "{{ item.resource_group }}"
+#         name: "{{ item.name }}"
+#       register: vm_info
+#       with_items: "{{ azure_vms }}"
+#     - name: Get VM Details      
+#       azure_rm_virtualmachine_info:
+#         resource_group: "{{ resource_group }}"
+#         name: "{{ inventory_hostname }}"
+#       register: vm_info
+#     - name: Display VM info
+#       debug:
+#         var: vm_info
+
+
+
+# - name: Get DC VM Details
+#   azure.azcollection.azure_rm_virtualmachine_info:
+#     client_id: "{{ client_id }}"
+#     secret: "{{ secret }}"
+#     tenant: "{{ tenant_id }}"
+#     subscription_id: "{{ subscription_id }}"
+#     resource_group: "{{ resource_group }}"
+#     name: "{{ dc_name }}"
+#   register: dc_vm_info
+#   tags: ["get-server-hosts-and-variables"]
+
+    # - name: Attach disks to the VM
+    #   azure_rm_manageddisk:
+    #     resource_group: "{{ resource_group }}"
+    #     name: "{{ item.disk.name }}"
+    #     size_gb: "{{ item.disk.diskSizeGB }}"
+    #     sku: "{{ item.disk.diskType }}"
+    #     create_option: Empty
+    #   with_items: "{{ disks }}"
+    #   register: managed_disks
+    # - debug:
+    #     var: managed_disks
+    
+    # - name: Attach disks to VM
+    #   azure_rm_virtualmachine:
+    #     resource_group: "{{ resource_group }}"
+    #     name: "{{ inventory_hostname }}"
+    #     managed_disks:
+    #       - lun: "{{ item.item.letter | int }}"
+    #         id: "{{ item.id }}"
+    #     append: true
+    #   with_items: "{{ managed_disks.results }}"
+    #   when: managed_disks.results is defined

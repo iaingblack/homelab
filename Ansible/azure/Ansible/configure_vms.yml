@@ -1,0 +1,35 @@
+- name: Get facts by name
+  azure_rm_virtualmachine_info:
+    resource_group: "{{ hostvars[item].resourceGroupName }}"
+    name: "{{ item }}"
+  register: vm_info
+  # loop: "{{ groups['all'] | default([]) }}"
+
+# - debug:
+#     var: vm_info
+
+- debug:
+    var: hostvars[item]
+  
+- debug:
+    var: hostvars[item].vm_disks
+  
+- name:
+  azure_rm_manageddisk:
+    resource_group: "{{ hostvars[item].resourceGroupName }}"
+    name: "{{ item }}-disk"
+    size_gb: item.disk.diskSizeGB
+    sku: Standard_LRS
+    create_option: Empty
+  loop: "{{hostvars[item].vm_disks | dict2items }}"
+
+# - name: Create managed disks
+#   azure_rm_manageddisk:
+#     resource_group: "{{ hostvars[item].resourceGroupName }}"
+#     name: "{{ item }}-disk"
+#     size_gb: 10
+#     sku: Standard_LRS
+#     create_option: Empty
+#   loop: "{{ groups['all'] | default([]) }}"
+#   register: managed_disks
+#   where: item in vm_info.virtualmachines

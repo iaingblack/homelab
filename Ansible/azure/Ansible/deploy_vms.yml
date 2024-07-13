@@ -1,0 +1,72 @@
+# - name: Create Azure VMs
+#   hosts: localhost
+#   connection: local
+#   vars_files:
+#     - "./envs/{{ env }}"
+
+#   # Good example: https://github.com/ismc/an-demo-kit/blob/6b912593711b6eba5c77224f64f0a4df900fecc2/roles/cloud-config/tasks/azure-template.yml#L55
+#   tasks:
+
+
+- name: Deploy VMs - All hosts - hostvars
+  debug:
+    msg: "Host added: {{ item }}, Resource Group: {{ hostvars[item].resourceGroupName }}"
+  loop: "{{ groups['all'] | default([]) }}"
+
+- name: "Create resource group"
+  azure_rm_resourcegroup:
+    name: "{{ hostvars[item].resourceGroupName }}"
+    location: "{{ location }}"
+  loop: "{{ groups['all'] }}"
+  register: rg
+
+- name: Create virtual network
+  azure_rm_virtualnetwork:
+    resource_group: "{{ item.value.resourceGroupName }}"
+    name: "{{ item.value.resourceGroupName }}-vnet"
+    address_prefixes: "10.0.0.0/16"
+    location: "{{ location }}"
+  loop: "{{ instances | dict2items }}"
+  register: vnet
+
+- name: Create subnet
+  azure_rm_subnet:
+    resource_group: "{{ item.value.resourceGroupName }}"
+    name: "{{ item.value.resourceGroupName }}-subnet"
+    address_prefix: "10.0.1.0/24"
+    virtual_network: "{{ item.value.resourceGroupName }}-vnet"
+  loop: "{{ instances | dict2items }}"
+  register: subnet
+
+- name: Create network interface
+  azure_rm_networkinterface:
+    resource_group: "{{  hostvars[item].resourceGroupName }}"
+    name: "{{ item }}-nic"
+    virtual_network: "{{  hostvars[item].resourceGroupName }}-vnet"
+    subnet: "{{  hostvars[item].resourceGroupName }}-subnet"
+    location: "{{ location }}"
+  loop: "{{ groups['all'] | default([]) }}"
+  register: nic
+
+- name: Create virtual machines
+  azure_rm_virtualmachine:
+    resource_group: "{{ hostvars[item].resourceGroupName }}"
+    name: "{{ item }}"
+    vm_size: "{{ (hostvars[item].type == 'linux') | ternary(linux_vm_size, windows_vm_size) }}"
+    os_type: "{{ (hostvars[item].type == 'linux') | ternary('Linux', 'Windows') }}"
+    admin_username: "{{ admin_username }}"
+    admin_password: "{{ admin_password }}"
+    image:
+      offer: "{{ (hostvars[item].type == 'linux') | ternary('UbuntuServer', 'WindowsServer') }}"
+      publisher: "{{ (hostvars[item].type == 'linux') | ternary('Canonical', 'MicrosoftWindowsServer') }}"
+      sku: "{{ (hostvars[item].type == 'linux') | ternary('18.04-LTS', '2019-Datacenter') }}"
+      version: latest
+    network_interfaces:
+      - name: "{{ item }}-nic"
+    tags:
+      environment: test
+  loop: "{{ groups['all'] | default([]) }}"
+  register: vms
+
+- debug:
+    var: vms

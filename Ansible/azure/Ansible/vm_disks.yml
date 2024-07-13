@@ -1,0 +1,85 @@
+---
+- name: Generate dynamic host list and modify VM size in Azure
+  hosts: localhost
+  gather_facts: no
+  vars_files:
+    - "./envs/{{ env }}"
+  tasks:
+    - name: Generate host list
+      set_fact:
+        host_list: |
+          {% set hosts = [] %}
+          {% for key, instance in instances.items() %}
+            {% for i in range(instance.numberOfInstances) %}
+              {% set vm_name = instance.virtualMachineName ~ (instance.virtualMachineStartingNumber + i) %}
+              {% set disks = [] %}
+              {% for letter, disk in instance.vm_disks.items() %}
+                {% set _ = disks.append({'letter': letter, 'disk': disk}) %}
+              {% endfor %}
+              {% set _ = hosts.append({'name': vm_name, 'resource_group': instance.resourceGroupName, 'vm_size': instance.virtualMachineSize, 'os_version': instance.osVersion, 'disks': disks}) %}
+            {% endfor %}
+          {% endfor %}
+          {{ hosts }}
+    
+    - name: Display generated host list
+      debug:
+        var: host_list
+    
+    - name: Add hosts to inventory
+      add_host:
+        name: "{{ item.name }}"
+        groups: azure_vms
+        resource_group: "{{ item.resource_group }}"
+        vm_size: "{{ item.vm_size }}"
+        os_version: "{{ item.os_version }}"
+        disks: "{{ item.disks }}"
+      with_items: "{{ host_list }}"
+
+
+    # groups: "{{ ansible_domain_servers_inventory_group_name }}"
+    # hostname: "{{ dc_output_ip_address.publicipaddresses[0].dns_settings.fqdn }}"
+    # ansible_connection: "winrm"
+    # ansible_winrm_server_cert_validation: "ignore"
+    # ansible_user: "{{ kv_vm_admin_username }}"
+    # ansible_password: "{{ kv_vm_admin_password }}"
+    # ansible_winrm_transport: "ntlm"
+    # ansible_winrm_scheme: "https"
+    
+    - name: Manage disks in Azure
+  hosts: azure_vms
+  gather_facts: no
+  tasks:
+    - name: Gather information about the VM
+      azure_rm_virtualmachine_info:
+        resource_group: "{{ resource_group }}"
+        name: "{{ inventory_hostname }}"
+      register: vm_info
+    
+    - name: Display VM info
+      debug:
+        var: vm_info
+    
+    # - name: Create managed disks
+    #   azure_rm_manageddisk:
+    #     resource_group: "{{ resource_group }}"
+    #     name: "{{ item.disk.name }}-{{ inventory_hostname }}"
+    #     size_gb: "{{ item.disk.diskSizeGB }}"
+    #     sku: "{{ item.disk.diskType }}"
+    #     create_option: Empty
+    #   with_items: "{{ disks }}"
+    #   register: managed_disks
+    
+    # - name: Display managed disks result
+    #   debug:
+    #     var: managed_disks
+    
+    # - name: Attach managed disks to VM
+    #   azure_rm_virtualmachine:
+    #     resource_group: "{{ resource_group }}"
+    #     name: "{{ inventory_hostname }}"
+    #     managed_disks:
+    #       - lun: "{{ item.item.letter | int }}"
+    #         id: "{{ item.id }}"
+    #     append: true
+    #   with_items: "{{ managed_disks.results }}"
+    #   when: managed_disks.results is defined

@@ -1,0 +1,14 @@
+instances:
+  azure_deployment_1:
+    resourceGroupName: iain-test
+    virtualMachineName: Win-VM-A-
+    virtualMachineStartingNumber: 1
+    numberOfInstances: 1
+    type: windows
+
+  azure_deployment_2:
+    resourceGroupName: iain-test
+    virtualMachineName: Linux-VM-A-
+    virtualMachineStartingNumber: 2
+    numberOfInstances: 2
+    type: linux

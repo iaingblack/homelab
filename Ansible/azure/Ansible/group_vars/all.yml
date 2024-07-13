@@ -1,0 +1,8 @@
+location: "northeurope"
+azure_vms: "azure_vms"
+linux_vm_size: Standard_B1s
+windows_vm_size: Standard_B2s
+admin_username: iain 
+admin_password: Ia1n5Password!
+azure_vm_username: iain 
+azure_vm_password: Ia1n5Password!
