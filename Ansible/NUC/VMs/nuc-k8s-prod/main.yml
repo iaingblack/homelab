@@ -1,0 +1,92 @@
+---
+- hosts: all
+  tasks:
+    # Basic OS Setup
+    - name: Update apt repository cache
+      apt:
+        update_cache: yes
+    - name: Ubuntu OS Upgrade
+      ansible.builtin.apt:
+        upgrade: yes
+    - name: Install prerequisites
+      apt:
+        name:
+          - curl
+          - apt-transport-https
+          - gnupg
+          - software-properties-common
+        state: present
+    - name: Install snapd
+      ansible.builtin.package:
+        name: snapd
+        state: present
+
+    # Install and setup MicroK8S
+    - name: Install Microk8s
+      community.general.snap:
+        name: microk8s
+        classic: true
+      register: multipass
+    - name: Add current user to the microk8s group
+      user:
+        name: "{{ ansible_user }}"
+        groups: microk8s
+        append: yes
+    - name: Setup permission to use MicroK8s
+      become: yes
+      command: usermod -a -G microk8s root
+    - name: Enable Microk8s Addons
+      become: yes
+      command: microk8s enable dns dashboard storage
+    - name: Wait for MicroK8s to be ready
+      shell: |
+        microk8s status --wait-ready
+    - name: Alias kubectl to microk8s kubectl
+      file:
+        src: /snap/bin/microk8s.kubectl
+        dest: /usr/local/bin/kubectl
+        state: link
+
+    # Install ArgoCD
+    - name: Install Argo CD CLI
+      shell: |
+        curl -sSL -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+        chmod +x /usr/local/bin/argocd
+
+    - name: Install Argo CD
+      shell: |
+        microk8s kubectl create namespace argocd
+        microk8s kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+
+    - name: Wait for Argo CD components to be ready
+      shell: |
+        while [[ $(microk8s kubectl get pods -n argocd -l app.kubernetes.io/name=argocd-server -o 'jsonpath={..status.conditions[?(@.type=="Ready")].status}') != "True" ]]; do
+          echo "waiting for Argo CD components to be ready" 
+          sleep 5
+        done
+
+    - name: Expose Argo CD server (NodePort)
+      shell: |
+        microk8s kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "NodePort"}}'
+        microk8s kubectl patch svc argocd-server -n argocd -p '{"spec": {"ports": [{"port": 80,"targetPort": 8080,"nodePort": 30080}]}}'
+
+    - name: Get Argo CD initial admin password and save to file
+      shell: |
+        microk8s kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 --decode > /root/argocd_initial_admin_password.txt
+
+    - name: Read the Argo CD initial admin password from file
+      slurp:
+        src: /root/argocd_initial_admin_password.txt
+      register: argocd_password
+
+    - name: Get the IP address of the host
+      shell: hostname -I | awk '{print $1}'
+      register: host_ip
+
+    - name: Display the Argo CD web interface URL and login detail
+      debug:
+        msg: "Argo CD web interface URL: http://{{ host_ip.stdout }}:30080 and login with user admin and {{ argocd_password.content | b64decode }}"
+
+    - name: Display Kubeconfig
+      debug:
+        msg: "Run this: microk8s config"
