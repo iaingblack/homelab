@@ -1,0 +1,14 @@
+version: '3'
+
+services:
+    rundeck:
+        image: ${RUNDECK_IMAGE:-rundeck/rundeck:SNAPSHOT}
+        tty: true
+        volumes:
+          - data:/home/rundeck/server/data
+          - ${RUNDECK_LICENSE_FILE:-/dev/null}:/home/rundeck/etc/rundeckpro-license.key
+        ports:
+          - 4440:4440
+
+volumes:
+    data:
