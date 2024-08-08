@@ -26,7 +26,6 @@
       community.general.snap:
         name: microk8s
         classic: true
-      register: multipass
     - name: Add current user to the microk8s group
       user:
         name: "{{ ansible_user }}"
@@ -46,6 +45,11 @@
         src: /snap/bin/microk8s.kubectl
         dest: /usr/local/bin/kubectl
         state: link
+
+    # Install Kompose
+    - name: Install Kompose
+      community.general.snap:
+        name: kompose
 
     # Install ArgoCD
     - name: Install Argo CD CLI
