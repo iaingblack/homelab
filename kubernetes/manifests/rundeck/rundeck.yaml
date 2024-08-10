@@ -2,38 +2,38 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: rundeck
-# ---
-# apiVersion: apps/v1
-# kind: Deployment
-# metadata:
-#   name: rundeck
-# spec:
-#   replicas: 1
-#   selector:
-#     matchLabels:
-#       app: rundeck
-#   template:
-#     metadata:
-#       labels:
-#         app: rundeck
-#     spec:
-#       containers:
-#       - name: rundeck
-#         image: rundeck/rundeck:5.2.0
-#         env:
-#           - name: RUNDECK_DATABASE_DRIVER
-#             value: org.postgresql.Driver
-#           - name: RUNDECK_DATABASE_USERNAME
-#             value: rundeck
-#           - name: RUNDECK_DATABASE_PASSWORD
-#             value: rundeck
-#           - name: RUNDECK_DATABASE_URL
-#             value: jdbc:postgresql://postgres/rundeck?autoReconnect=true&useSSL=false&allowPublicKeyRetrieval=true
-#           - name: RUNDECK_GRAILS_URL
-#             value: http://localhost:4440
-#         ports:
-#         - containerPort: 4440
-#           protocol: TCP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rundeck
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rundeck
+  template:
+    metadata:
+      labels:
+        app: rundeck
+    spec:
+      containers:
+      - name: rundeck
+        image: rundeck/rundeck:5.2.0
+        env:
+          - name: RUNDECK_DATABASE_DRIVER
+            value: org.postgresql.Driver
+          - name: RUNDECK_DATABASE_USERNAME
+            value: rundeck
+          - name: RUNDECK_DATABASE_PASSWORD
+            value: rundeck
+          - name: RUNDECK_DATABASE_URL
+            value: jdbc:postgresql://postgres/rundeck?autoReconnect=true&useSSL=false&allowPublicKeyRetrieval=true
+          - name: RUNDECK_GRAILS_URL
+            value: http://localhost:4440
+        ports:
+        - containerPort: 4440
+          protocol: TCP
 # ---
 # apiVersion: v1
 # kind: Service
