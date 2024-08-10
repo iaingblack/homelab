@@ -84,8 +84,8 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 2Gi  # Adjust storage size as needed
-  storageClassName: managed-nfs-storage # Replace with your storage class
+      storage: 4Gi  # Adjust storage size as needed
+  storageClassName: managed-nfsmicrok8s-hostpath-storage # Replace with your storage class
 ---
 apiVersion: v1
 kind: Service
