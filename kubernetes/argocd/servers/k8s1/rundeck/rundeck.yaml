@@ -43,11 +43,12 @@ spec:
   selector:
     app: rundeck
   ports:
-  - protocol: TCP
+  - name: http
+    protocol: TCP
     port: 4440
     targetPort: 4440
-    NodePort: 4440  # Adjust the port as needed
-  type: NodePort   # Adjust the type as needed (e.g. ClusterIP)
+    nodePort: 4440
+type: NodePort   # Adjust the type as needed (e.g. ClusterIP)
 ---
 apiVersion: apps/v1
 kind: Deployment
