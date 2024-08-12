@@ -48,7 +48,7 @@ spec:
     port: 4440
     targetPort: 4440
     nodePort: 4440
-type: NodePort   # Adjust the type as needed (e.g. ClusterIP)
+  type: NodePort   # Adjust the type as needed (e.g. ClusterIP)
 ---
 apiVersion: apps/v1
 kind: Deployment
