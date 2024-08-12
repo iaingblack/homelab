@@ -89,8 +89,7 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 4Gi  # Adjust storage size as needed
-  # storageClassName: microk8s-hostpath # Replace with your storage class
+      storage: 8Gi  # Adjust storage size as needed
   storageClassName: local-path
 ---
 apiVersion: v1
