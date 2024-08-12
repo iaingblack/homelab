@@ -89,7 +89,7 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 8Gi  # Adjust storage size as needed
+      storage: 4Gi  # Adjust storage size as needed, though this is ignored on local-path as it is the hosts disk with no quota
   storageClassName: local-path
 ---
 apiVersion: v1
