@@ -90,7 +90,8 @@ spec:
   resources:
     requests:
       storage: 4Gi  # Adjust storage size as needed
-  storageClassName: microk8s-hostpath # Replace with your storage class
+  # storageClassName: microk8s-hostpath # Replace with your storage class
+  storageClassName: local-path-storage
 ---
 apiVersion: v1
 kind: Service
