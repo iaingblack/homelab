@@ -1,0 +1,9 @@
+---
+- hosts: all
+  tasks:
+    - name: Delete helm arc-runner-set install
+      command: helm delete arc-runner-set -n arc-runners
+
+    - name: Delete helm arc install
+      command: helm delete arc -n arc-systems
+

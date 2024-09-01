@@ -1,0 +1,12 @@
+---
+- hosts: all
+  tasks:
+    - name: Check if Kind cluster 'github' exists
+      command: kind get clusters
+      register: kind_clusters
+      changed_when: false
+
+    - name: Create Kind cluster if it doesn't exist
+      when: "'github' in kind_clusters.stdout"
+      command: kind delete cluster --name github
+
