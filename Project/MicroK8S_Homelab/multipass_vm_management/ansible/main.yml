@@ -1,0 +1,15 @@
+---
+- name: Create Multipass VMs for a MicroK8S cluster
+  hosts: windows
+
+  tasks:
+  - name: Read MicroK8S cluster node VM configuration from file
+    include_vars:
+      file: microk8s-instances.yml
+      name: microk8sinstances
+  - name: Create the MicroK8S cluster Instances
+    include_tasks: delete-and-create-new-vm-tasks.yml
+    vars:
+      vmname: "{{ item.key }}"
+      vmcreationparams: "{{ item.value }}"
+    loop: "{{ microk8sinstances | dict2items }}"

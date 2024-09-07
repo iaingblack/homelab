@@ -1,0 +1,11 @@
+[windows]
+windows_host ansible_host=192.168.1.108
+
+[windows:vars]
+ansible_user=iain
+# export WIN_PASSWORD='your_windows_password'
+ansible_password="{{ lookup('env', 'WIN_PASSWORD') }}"
+ansible_connection=winrm
+ansible_winrm_server_cert_validation=ignore
+ansible_port=5985
+ansible_winrm_transport=basic

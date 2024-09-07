@@ -1,0 +1,41 @@
+---
+# Deletes any existing Multipass VM with the supplied name, then creates
+# a new VM with the supplied name is created with the supplied parameters.
+# Prerequisites:
+# A SSH keypair that will be used as one option to log into the new VM must exist.
+# A cloud-init configuration file named "cloud-init.yaml" that will be used
+# when creating the new VM must exist.
+# Variables:
+# vmname - Name of the VM that is to be create.
+# vmcreationparams - Parameters that will be used when creating the new VM with Multipass.
+- name: Create a temporary folder
+  win_file:
+    path: C:\temp
+    state: directory
+- name: Copy a cloud-init.yml to the temporary folder
+  win_copy:
+    src: cloud-init.yml
+    dest: C:\temp\cloud-init.yml
+- name: Log VM creation start
+  debug:
+    msg: "About to create VM {{ vmname }}..."
+- name: Delete existing VM
+  ansible.windows.win_shell: |
+    $vmname = "{{ vmname }}"
+    # Check if the VM exists by using 'multipass info'
+    try {
+        multipass info $vmname | Out-Null
+        $exists = $true
+    } catch {
+        $exists = $false
+    }
+    # If the VM exists, delete and purge it
+    if ($exists) {
+        multipass delete $vmname
+        multipass purge
+    }
+- name: Create new VM
+  ansible.windows.win_shell: multipass launch --name {{ vmname }} --cloud-init C:\temp\cloud-init.yml {{ vmcreationparams }}
+- name: Log VM creation completion
+  debug:
+    msg: "Finished creating VM {{ vmname }}."
