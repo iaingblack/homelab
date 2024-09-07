@@ -3,4 +3,4 @@ users:
   - name: vmadmin
     sudo:  ALL=(ALL) NOPASSWD:ALL
     ssh_authorized_keys:
-      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIA0wSRi83wxDgxdA8o34GOjYkjC/ck5UsvRO7q8vPqhss
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIA0wSRi83wxDgxdA8o34GOjYkjC/ck5UsvRO7q8vPqhs
