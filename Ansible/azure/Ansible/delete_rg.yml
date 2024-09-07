@@ -1,0 +1,16 @@
+- name: Create Azure VMs
+  hosts: localhost
+  connection: local
+  vars_files:
+    - "./envs/{{ env }}"
+
+  # Good example: https://github.com/ismc/an-demo-kit/blob/6b912593711b6eba5c77224f64f0a4df900fecc2/roles/cloud-config/tasks/azure-template.yml#L55
+  tasks:
+    - name: Delete resource groups
+      azure_rm_resourcegroup:
+        name: "{{ item.value.resourceGroupName }}"
+        location: "{{ location }}"
+        state: absent
+        force_delete_nonempty: True
+      loop: "{{ instances | dict2items }}"
+      register: rg

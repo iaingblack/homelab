@@ -1,0 +1,22 @@
+- name: Get VM details
+  hosts: localhost
+  connection: local
+  vars_files:
+    - "./envs/{{ env }}"
+  tasks:
+  - name: Get the VMs we need to configure
+    ansible.builtin.include: "get_vms.yml"
+
+  - name: All hosts - hostvars
+    debug:
+      msg: "Host added: {{ item }}, Resource Group: {{ hostvars[item].resourceGroupName }}"
+    loop: "{{ groups['all'] | default([]) }}"
+
+  # - name: Get the VMs we need to configure
+  #   ansible.builtin.include: "deploy_vms.yml"
+
+  - name: Configure the VMs
+    ansible.builtin.include: "configure_vms.yml"
+    loop: "{{ groups['all'] | default([]) }}"
+
+# Modify VMs themselves

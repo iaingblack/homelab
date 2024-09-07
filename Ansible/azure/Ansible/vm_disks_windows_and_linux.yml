@@ -1,0 +1,151 @@
+---
+- name: Generate dynamic host list and modify VM size in Azure
+  hosts: localhost
+  gather_facts: no
+  vars_files:
+    - "./envs/{{ env }}"
+  tasks:
+    - name: Generate host list
+      set_fact:
+        host_list: |
+          {% set hosts = [] %}
+          {% for key, instance in instances.items() %}
+            {% for i in range(instance.numberOfInstances) %}
+              {% set vm_name = instance.virtualMachineName ~ (instance.virtualMachineStartingNumber + i) %}
+              {% set disks = [] %}
+              {% for letter, disk in instance.vm_disks.items() %}
+                {% set _ = disks.append({'letter': letter, 'disk': disk}) %}
+              {% endfor %}
+              {% set _ = hosts.append({'name': vm_name, 'resource_group': instance.resourceGroupName, 'vm_size': instance.virtualMachineSize, 'os_version': instance.osVersion, 'disks': disks}) %}
+            {% endfor %}
+          {% endfor %}
+          {{ hosts }}
+    
+    - name: Display generated host list
+      debug:
+        var: host_list
+    
+    - name: Add hosts to inventory
+      add_host:
+        name: "{{ item.name }}"
+        groups: "{% if 'Windows' in item.os_version %}windows_vms{% else %}linux_vms{% endif %}"
+        ansible_host: "{{ item.name }}"
+        ansible_user: "<your_ansible_user>"
+        ansible_password: "<your_ansible_password>"
+        ansible_connection: "{% if 'Windows' in item.os_version %}winrm{% else %}ssh{% endif %}"
+        ansible_port: "{% if 'Windows' in item.os_version %}5986{% else %}22{% endif %}"
+        resource_group: "{{ item.resource_group }}"
+        vm_size: "{{ item.vm_size }}"
+        os_version: "{{ item.os_version }}"
+        disks: "{{ item.disks }}"
+      with_items: "{{ host_list }}"
+
+- name: Modify VM size and manage disks in Azure (Windows)
+  hosts: windows_vms
+  gather_facts: no
+  tasks:
+    - name: Gather information about the VM
+      azure.azcollection.azure_rm_virtualmachine_info:
+        resource_group: "{{ resource_group }}"
+        name: "{{ inventory_hostname }}"
+      register: vm_info
+    
+    - name: Display VM info
+      debug:
+        var: vm_info
+    
+    # - name: Change VM size
+    #   azure_rm_virtualmachine:
+    #     resource_group: "{{ resource_group }}"
+    #     name: "{{ inventory_hostname }}"
+    #     vm_size: "{{ vm_size }}"
+    #     os_disk:
+    #       caching: ReadWrite
+    #       managed_disk:
+    #         storage_account_type: Standard_LRS
+    #     state: present
+    #   register: vm_resize
+    
+    # - name: Display VM resize result
+    #   debug:
+    #     var: vm_resize
+    
+    # - name: Create managed disks
+    #   azure_rm_manageddisk:
+    #     resource_group: "{{ resource_group }}"
+    #     name: "{{ item.disk.name }}-{{ inventory_hostname }}"
+    #     size_gb: "{{ item.disk.diskSizeGB }}"
+    #     sku: "{{ item.disk.diskType }}"
+    #     create_option: Empty
+    #   with_items: "{{ disks }}"
+    #   register: managed_disks
+    
+    # - name: Display managed disks result
+    #   debug:
+    #     var: managed_disks
+    
+    # - name: Attach managed disks to VM
+    #   azure_rm_virtualmachine:
+    #     resource_group: "{{ resource_group }}"
+    #     name: "{{ inventory_hostname }}"
+    #     managed_disks:
+    #       - lun: "{{ item.item.letter | int }}"
+    #         id: "{{ item.id }}"
+    #     append: true
+    #   with_items: "{{ managed_disks.results }}"
+    #   when: managed_disks.results is defined
+
+# - name: Modify VM size and manage disks in Azure (Linux)
+#   hosts: linux_vms
+#   gather_facts: no
+#   tasks:
+#     - name: Gather information about the VM
+#       azure_rm_virtualmachine_info:
+#         resource_group: "{{ resource_group }}"
+#         name: "{{ inventory_hostname }}"
+#       register: vm_info
+    
+#     - name: Display VM info
+#       debug:
+#         var: vm_info
+    
+#     - name: Change VM size
+#       azure_rm_virtualmachine:
+#         resource_group: "{{ resource_group }}"
+#         name: "{{ inventory_hostname }}"
+#         vm_size: "{{ vm_size }}"
+#         os_disk:
+#           caching: ReadWrite
+#           managed_disk:
+#             storage_account_type: Standard_LRS
+#         state: present
+#       register: vm_resize
+    
+#     - name: Display VM resize result
+#       debug:
+#         var: vm_resize
+    
+#     - name: Create managed disks
+#       azure_rm_manageddisk:
+#         resource_group: "{{ resource_group }}"
+#         name: "{{ item.disk.name }}-{{ inventory_hostname }}"
+#         size_gb: "{{ item.disk.diskSizeGB }}"
+#         sku: "{{ item.disk.diskType }}"
+#         create_option: Empty
+#       with_items: "{{ disks }}"
+#       register: managed_disks
+    
+#     - name: Display managed disks result
+#       debug:
+#         var: managed_disks
+    
+#     - name: Attach managed disks to VM
+#       azure_rm_virtualmachine:
+#         resource_group: "{{ resource_group }}"
+#         name: "{{ inventory_hostname }}"
+#         managed_disks:
+#           - lun: "{{ item.item.letter | int }}"
+#             id: "{{ item.id }}"
+#         append: true
+#       with_items: "{{ managed_disks.results }}"
+#       when: managed_disks.results is defined

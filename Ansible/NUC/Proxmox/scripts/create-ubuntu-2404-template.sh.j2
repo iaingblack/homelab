@@ -1,7 +1,7 @@
 #! /bin/bash
 
 VMID={{ VMID }}
-STORAGE=local-lvm
+STORAGE={{ storage }}
 
 set -x
 wget -qN https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img
@@ -13,9 +13,16 @@ qm create $VMID --name "ubuntu-2404-template" --ostype l26 \
     --bios ovmf --machine q35 --efidisk0 $STORAGE:0,pre-enrolled-keys=0 \
     --cpu host --cores 2 --numa 1 \
     --vga serial0 --serial0 socket  \
-    --net0 virtio,bridge=vmbr0,mtu=1
+    --net0 virtio,bridge=vmbr0,mtu=1 \
+    --scsihw virtio-scsi-pci
+
 qm importdisk $VMID noble-server-cloudimg-amd64.img $STORAGE
+
+# qm set $VMID --scsihw virtio-scsi-pci --virtio0 local:9201/vm-9201-disk-1.raw,discard=on
+# Sometimes it has .raw, and on other proxmox servers it doesn't... One will fail, one will work
+qm set $VMID --scsihw virtio-scsi-pci --virtio0 $STORAGE:$VMID/vm-$VMID-disk-1.raw,discard=on
 qm set $VMID --scsihw virtio-scsi-pci --virtio0 $STORAGE:vm-$VMID-disk-1,discard=on
+
 qm set $VMID --boot order=virtio0
 qm set $VMID --ide2 $STORAGE:cloudinit
 qm set 100 --ciuser root --cipassword Password1!

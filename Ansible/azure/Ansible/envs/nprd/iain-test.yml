@@ -1,0 +1,61 @@
+instances:
+  azure_deployment_1:
+    resourceGroupName: iain-test
+    virtualMachineName: WinVM
+    virtualMachineStartingNumber: 1
+    numberOfInstances: 1
+    type: windows
+    vm_disks:
+      e:
+        diskSizeGB: 4
+        diskType: Standard_LRS
+        name: "data"
+      f:
+        diskSizeGB: 4
+        diskType: Standard_LRS
+        name: "data"
+    os:
+      administrators:
+        - 'analytics\builduser'
+    software:
+      octopus_tentacle:
+          server: "https://octopus.example.com"
+          apiKey: "API-XXXXXXXX"
+          environment: "Development"
+          project: "MyProject"
+          space: "Default"
+          roles:
+            - "Web"
+            - "Database"
+            - "App"
+      
+  azure_deployment_2:
+    resourceGroupName: iain-test
+    virtualMachineName: LinuxVM
+    virtualMachineStartingNumber: 1
+    numberOfInstances: 2
+    type: linux
+    vm_disks:
+      e:
+        diskSizeGB: 4
+        diskType: Standard_LRS
+        name: "data"
+      f:
+        diskSizeGB: 4
+        diskType: Standard_LRS
+        name: "data"
+    os:
+      administrators:
+        - 'analytics\builduser'
+    software:
+      octopus_tentacle:
+          server: "https://octopus.example.com"
+          apiKey: "API-XXXXXXXX"
+          environment: "Development"
+          project: "MyProject"
+          space: "Default"
+          roles:
+            - "Web"
+            - "Database"
+            - "App"
+      

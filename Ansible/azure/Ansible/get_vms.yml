@@ -1,0 +1,78 @@
+---
+# - name: Generate dynamic host list and modify VM size in Azure
+#   hosts: localhost
+#   gather_facts: no
+#   vars_files:
+#     - "./envs/{{ env }}"
+
+#   tasks:
+
+- name: Create list of hosts with details
+  set_fact:
+    hosts_list: >-
+      {%- set hosts = [] -%}
+      {%- for instance_name, instance in instances.items() -%}
+        {%- set vm_base_name = instance.virtualMachineName -%}
+        {%- set start_num = instance.virtualMachineStartingNumber -%}
+        {%- set count = instance.numberOfInstances -%}
+        {%- for i in range(start_num, start_num + count) -%}
+          {%- set host = {
+                  "name": vm_base_name ~ i|string,
+                  "type": instance.type,
+                  "resourceGroupName": instance.resourceGroupName,
+                  "instance_name": instance_name,
+                  "vm_disks": instance.vm_disks,
+                  "os": instance.os,
+                  "software": instance.software
+                } -%}
+          {%- set _ = hosts.append(host) -%}
+        {%- endfor -%}
+      {%- endfor -%}
+      {{ hosts }}  # This should output a single list
+
+- name: Display JSON object
+  debug:
+    var: hosts_list
+
+- name: Add linux hosts to inventory
+  add_host:
+    name: "{{ item.name }}"
+    groups: linux
+    ansible_host: "{{ item.name }}"
+    type: "{{ item.type }}"
+    resourceGroupName: "{{ item.resourceGroupName }}"
+    vm_disks: "{{ item.vm_disks }}"
+    os: "{{ item.os }}"
+    software: "{{ item.software }}"
+  loop: "{{ hosts_list }}"
+  when: item.type == 'linux'
+
+- name: Add windows hosts to inventory
+  add_host:
+    name: "{{ item.name }}"
+    groups: windows
+    ansible_host: "{{ item.name }}"
+    type: "{{ item.type }}"
+    resourceGroupName: "{{ item.resourceGroupName }}"
+  loop: "{{ hosts_list }}"
+  when: item.type == 'windows'
+
+- name: Debug linux hosts
+  debug:
+    msg: "Linux host added: {{ item }}"
+  loop: "{{ groups['linux'] | default([]) }}"
+
+- name: Debug windows hosts
+  debug:
+    msg: "Windows host added: {{ item }}"
+  loop: "{{ groups['windows'] | default([]) }}"
+
+- name: Debug windows hosts - hostvars
+  debug:
+    msg: "Windows host added: {{ item }}, Resource Group: {{ hostvars[item].resourceGroupName }}"
+  loop: "{{ groups['windows'] | default([]) }}"
+
+- name: Debug linux hosts - hostvars
+  debug:
+    msg: "Linux host added: {{ item }}, Resource Group: {{ hostvars[item].resourceGroupName }}"
+  loop: "{{ groups['linux'] | default([]) }}"
