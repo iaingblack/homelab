@@ -7,9 +7,6 @@ terraform {
     }
   }
   backend "azurerm" {
-    resource_group_name  = "Terraform"
-    storage_account_name = "ibterraformstatefiles"
-    container_name       = "test"
   }
 }
 

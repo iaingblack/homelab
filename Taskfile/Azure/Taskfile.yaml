@@ -14,8 +14,8 @@ tasks:
   init:
     dotenv: ['.env.{{.ENV}}']
     cmds:
-      - echo "LOADED - '.env.{{.ENV}}' and Subscription $ARM_SUBSCRIPTION_ID and File {{.VARFILE}}"
-      - terraform init --backend-config="key={{.VARFILE}}.state"
+      - echo "LOADED - '.env.{{.ENV}}' and Subscription $ARM_SUBSCRIPTION_ID and File {{.VARFILE}} BERG $BACKEND_RG_NAME $BACKEND_SA_NAME $BACKEND_CONTAINER_NAME"
+      - terraform init --backend-config="key={{.VARFILE}}.state" --backend-config="resource_group_name=$BACKEND_RG_NAME" --backend-config="storage_account_name=$BACKEND_SA_NAME" --backend-config="container_name=$BACKEND_CONTAINER_NAME"
   plan:
     dotenv: ['.env.{{.ENV}}']
     cmds:
