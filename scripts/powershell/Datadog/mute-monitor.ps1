@@ -11,8 +11,21 @@
 Import-Module poshdog
 # Get-Command -Module poshdog
 
+Get-Module poshdog | Select-Object Name,Version,Path
+$modulePath = (Get-Module poshdog | Select-Object -ExpandProperty Path)
+$filePath = Join-Path (Split-Path $modulePath -Parent) "Private/New-DDQuery.ps1"
+# Ensure the file exists
+if (Test-Path $filePath) {
+    # Read the file content, replace the text, and write it back
+    (Get-Content -Path $filePath) -replace "datadoghq.com", "datadoghq.eu" | Set-Content -Path $filePath
+    Write-Host "Replaced 'datadoghq.com' with 'datadoghq.eu' in $filePath"
+} else {
+    Write-Host "File not found: $filePath"
+}
+
 Set-DDConfiguration -DDApiKey $dd_ApiKey -DDAppKey $dd_AppKey 
 Get-DDMonitor
+
 
 # https://gist.github.com/yogin/39def9303546858878236c72c8301276
 
