@@ -20,7 +20,7 @@ configuration.api_key["appKeyAuth"] = dd_app_key
 configuration.server_variables["site"] = "datadoghq.eu"
 
 # Define the search string
-search_string = "clienta"
+search_string = "Client"
 
 # Use the API to list all monitors and filter by name
 with ApiClient(configuration) as api_client:
