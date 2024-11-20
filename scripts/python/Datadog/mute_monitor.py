@@ -1,6 +1,8 @@
+# https://github.com/DataDog/datadog-api-client-python/tree/master
 import os
 from datadog_api_client import ApiClient, Configuration
 from datadog_api_client.v1.api.monitors_api import MonitorsApi
+from datetime import datetime, timedelta
 
 # python3 -m venv ./venv
 # source ./venv/bin/activate
@@ -38,5 +40,18 @@ if matching_monitors:
     print(f"Found {len(matching_monitors)} monitors with '{search_string}' in the name:")
     for monitor in matching_monitors:
         print(f" - ID: {monitor.id}, Name: {monitor.name}")
+        # Mute the monitor for 4 hours
+        mute_end_time = int((datetime.utcnow() + timedelta(hours=4)).timestamp())
+        with ApiClient(configuration) as api_client:
+            api_instance = MonitorsApi(api_client)
+            response = api_instance.update_monitor(
+                monitor_id=monitor.id,
+                body={
+                    "end": mute_end_time,
+                    "message": "Temporarily muted for 4 hours due to maintenance."
+                }
+            )
+            print(response)
+            print(f"Muted monitor ID {monitor.id} until {mute_end_time} UTC")
 else:
     print(f"No monitors found with '{search_string}' in the name.")
