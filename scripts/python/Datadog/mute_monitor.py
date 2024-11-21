@@ -54,7 +54,11 @@ if matching_monitors:
             "DD-API-KEY": dd_api_key,
             "DD-APPLICATION-KEY": dd_app_key,
         }
-        response = requests.post(url, headers=headers)
+        query_params = {
+            # "scope": "host:app1",  # Example: mute for a specific host
+            "end": mute_end_time,     # Example: POSIX timestamp for the mute end time
+        }
+        response = requests.post(url, headers=headers, params=query_params)
 
         # Check the response
         if response.status_code == 200:
@@ -64,5 +68,3 @@ if matching_monitors:
 else:
     print(f"No monitors found with '{search_string}' in the name.")
 
-
-# {"unmute_monitor_ids":["20586268"],"unmute_tags":true,"_authentication_token":"3b4094cdde5921edd8d4f09001ce7dc1ae448e7a"}
