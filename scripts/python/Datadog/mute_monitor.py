@@ -1,16 +1,9 @@
-# https://github.com/DataDog/datadog-api-client-python/tree/master
-# https://docs.datadoghq.com/api/latest/monitors/#update-a-monitor
-# https://docs.datadoghq.com/api/latest/monitors/
+# Mutes a monitor for 4 hours if the monitor name contains the search string "Client".
 
 import os, requests
 from datadog_api_client import ApiClient, Configuration
 from datadog_api_client.v1.api.monitors_api import MonitorsApi
 from datetime import datetime, timedelta
-
-# python3 -m venv ./venv
-# source ./venv/bin/activate
-# python3 -m pip install datadog-api-client requests
-# python3 mute_monitor.py
 
 # Read Datadog keys from environment variables
 dd_api_key = os.getenv("DD_API_KEY")
