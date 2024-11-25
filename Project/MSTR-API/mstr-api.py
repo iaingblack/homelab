@@ -27,10 +27,16 @@ def get_mstr_stock_price():
         return None
 
 def get_mstr_btc_holdings():
-    # As of September 2021, MicroStrategy held approximately 114,042 Bitcoins.
     # Update this number with the latest holdings for accuracy.
-    btc_holdings = 114042  # Replace with the latest number if available
+    btc_holdings = 386700  # Replace with the latest number if available
     return btc_holdings
+
+
+def get_mstr_total_spent_on_btc():
+    # Update this number with the latest holdings for accuracy.
+    total_spent_on_btc = 21949478700  # Replace with the latest number if available
+    return total_spent_on_btc
+
 
 def get_mstr_shares_outstanding():
     try:
@@ -60,14 +66,18 @@ def main():
 
     print(f"Current Bitcoin Price (USD): ${btc_price:,.2f}")
     print(f"Current MSTR Stock Price (USD): ${mstr_stock_price:,.2f}")
-    print(f"MicroStrategy's Bitcoin Holdings: {mstr_btc_holdings:,} BTC")
-    print(f"MicroStrategy's Total Bitcoin Value: ${total_btc_value:,.2f}")
+    print(f"MicroStrategy's Bitcoin Holdings Total : {mstr_btc_holdings:,} BTC ({(mstr_btc_holdings/21000000)*100:,.2f}%)")
     print(f"Bitcoin Value Per MSTR Share: ${btc_value_per_share:,.2f}")
+    print(f"Average Price MSTR Paid Per Bitcoin: ${get_mstr_total_spent_on_btc()/mstr_btc_holdings:,.2f}")
+    print(f"Total Profit On Bitcoin Holdings as a multiple of the average price: {(btc_price/(get_mstr_total_spent_on_btc()/mstr_btc_holdings)):,.2f}x")
+    print(f"Current Valuation of MSTR's Bitcoin Holdings: ${total_btc_value:,.2f}")
+    print(f"Current MSTR Valuation: ${mstr_stock_price * shares_outstanding:,.2f}")
+    print(f"Current value of MSTR vs Bitcoin Holdings: {(mstr_stock_price * shares_outstanding) / total_btc_value:,.2f}x")
 
     # Compare MSTR stock price to Bitcoin value per share
     print("\nComparison:")
     if mstr_stock_price > btc_value_per_share:
-        print(f"MSTR stock is trading at a premium of ${(mstr_stock_price - btc_value_per_share):,.2f} per share over its Bitcoin holdings.")
+        print(f"MSTR stock (${(mstr_stock_price):,.2f}) is trading at ${(mstr_stock_price - btc_value_per_share):,.2f} per share over its Bitcoin (${btc_price:,.2f}) holdings. Or, {(mstr_stock_price / btc_value_per_share):,.2f}x. Price should be ${btc_value_per_share:,.2f}")
     else:
         print(f"MSTR stock is trading at a discount of ${(btc_value_per_share - mstr_stock_price):,.2f} per share compared to its Bitcoin holdings.")
 
