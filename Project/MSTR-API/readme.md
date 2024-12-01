@@ -2,6 +2,10 @@
 ```bash
 brew install uv
 uv init
-uv add requests yfinance
-uv run mstr-api.py
+uv add requests yfinance fastapi uvicorn polygon-api-client pandas_datareader pandas
+uv run uvicorn mstr-api-polygon:app --reload
 ```
+
+curl http://127.0.0.1:8000/stock/mstr
+
+export POLYGON_API_KEY=jhlkhlkljlkj
