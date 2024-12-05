@@ -2,7 +2,7 @@
 ```bash
 brew install uv
 uv init
-uv add requests yfinance fastapi uvicorn polygon-api-client pandas_datareader pandas
+uv add requests yfinance fastapi uvicorn polygon-api-client pandas_datareader pandas easycharts psutils easyschedule
 uv run uvicorn mstr-api-polygon:app --reload
 ```
 

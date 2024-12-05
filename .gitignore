@@ -10,3 +10,4 @@ key.ppk
 **/packer_cache/*
 Ansible/k8s/github-actions-runner/ib_ssh
 **/venv/*
+**/*.pyc
