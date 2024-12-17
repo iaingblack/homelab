@@ -1,0 +1,20 @@
+# You cant load the dotenv at the root level, it gets ignored. 
+# Nor have a task that loads it and then have other depend on it. Has t be per task you do it
+version: '3'
+
+env:
+  ENV: nprd  # default value
+
+tasks:
+  greet:
+    dotenv: ['.env.{{.ENV}}']
+    cmds:
+      - echo "LOADED - '.env.{{.ENV}}' and $ENVTYPE and File $FILE_NAME"
+  create-file:
+    dotenv: ['.env.{{.ENV}}']
+    cmds:
+      - touch $FILE_NAME
+  delete-file:
+    dotenv: ['.env.{{.ENV}}']
+    cmds:
+      - rm $FILE_NAME
