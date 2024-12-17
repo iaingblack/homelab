@@ -1,0 +1,1 @@
+     multipass info $vmname | Select-String -Pattern 'IPv4' | ForEach-Object { $_.Line.Split(':')[1].Trim() }

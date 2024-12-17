@@ -8,34 +8,51 @@
 # Variables:
 # vmname - Name of the VM that is to be create.
 # vmcreationparams - Parameters that will be used when creating the new VM with Multipass.
+
+- name: Log VM creation start
+  debug:
+    msg: "About to create VM {{ vmname }} if required..."
+- name: Check if VM exists
+  ansible.windows.win_shell: |
+    $vmname = "{{ vmname }}"
+    try {
+        multipass info $vmname | Out-Null
+        Write-Output "true"
+    } catch {
+        Write-Output "false"
+    }
+  register: vm_exists_output    
+- name: Delete existing VM
+  ansible.windows.win_shell: |
+    $vmname = "{{ vmname }}"
+    multipass delete $vmname
+    multipass purge
+  when: 
+    - "'true' in vm_exists_output.stdout"
+    - delete_if_exists | bool
+- name: Set fact for VM creation logic
+  set_fact:
+    should_create_vm: "{{ 'not exists' in vm_exists_output.stdout or (delete_if_exists | bool and 'exists' in vm_exists_output.stdout) }}"
+- name: Debug values
+  debug: 
+    msg: "Vm Exists: {{ vm_exists_output.stdout }} - Delete if exists: {{ delete_if_exists }}- Create VM? - {{ should_create_vm }}"
 - name: Create a temporary folder
   win_file:
     path: C:\temp
     state: directory
+  when: should_create_vm
 - name: Copy a cloud-init.yml to the temporary folder
   win_copy:
     src: cloud-init.yml
     dest: C:\temp\cloud-init.yml
-- name: Log VM creation start
-  debug:
-    msg: "About to create VM {{ vmname }}..."
-- name: Delete existing VM
-  ansible.windows.win_shell: |
-    $vmname = "{{ vmname }}"
-    # Check if the VM exists by using 'multipass info'
-    try {
-        multipass info $vmname | Out-Null
-        $exists = $true
-    } catch {
-        $exists = $false
-    }
-    # If the VM exists, delete and purge it
-    if ($exists) {
-        multipass delete $vmname
-        multipass purge
-    }
+  when: should_create_vm
 - name: Create new VM
   ansible.windows.win_shell: multipass launch --name {{ vmname }} --cloud-init C:\temp\cloud-init.yml {{ vmcreationparams }}
+  when: should_create_vm
 - name: Log VM creation completion
   debug:
     msg: "Finished creating VM {{ vmname }}."
+  when: should_create_vm
+
+
+  

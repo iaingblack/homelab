@@ -12,4 +12,12 @@
     vars:
       vmname: "{{ item.key }}"
       vmcreationparams: "{{ item.value }}"
+      delete_if_exists: false
+    loop: "{{ microk8sinstances | dict2items }}"
+  - name: Add to hosts list for configuration
+    include_tasks: add-to-hosts-list.yml
+    vars:
+      vmname: "{{ item.key }}"
+      vmcreationparams: "{{ item.value }}"
+      delete_if_exists: false
     loop: "{{ microk8sinstances | dict2items }}"
