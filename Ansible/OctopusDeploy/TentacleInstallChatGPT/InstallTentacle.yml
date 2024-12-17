@@ -6,10 +6,10 @@
   vars:
     octopus_server_url: "http://192.168.1.239"
     octopus_server_thumbprint: "2BFB75FA3F20C034CB91920D59A6E39D59BBDBA6"
-    octopus_api_key: "API-XXXXXXXXX"
+    octopus_api_key: "API-5PM3FUISORY9PTIIKTWFSIRCJO99L83Z"
     tentacle_instance_name: "Tentacle"
-    tentacle_name: "MyTentacle"
-    tentacle_environment: "Production"
+    tentacle_name: "{{ inventory_hostname }}"
+    tentacle_environment: "Test"
     tentacle_role: "web-server"
     tentacle_port: "10933"
     tentacle_dir: "C:\\Octopus\\Tentacle"
@@ -40,35 +40,34 @@
         name: octopusdeploy.tentacle
         state: present
 
-    # - name: Ensure Tentacle directory exists
-    #   win_file:
-    #     path: "{{ tentacle_dir }}"
-    #     state: directory
+    - name: Ensure Tentacle directory exists
+      win_file:
+        path: "{{ tentacle_dir }}"
+        state: directory
 
-    # - name: Create Tentacle instance
-    #   win_command: '"C:\Program Files\Octopus Deploy\Tentacle\Tentacle.exe" create-instance --instance "{{ tentacle_instance_name }}" --config "{{ tentacle_config }}"'
+    - name: Create Tentacle instance
+      win_command: '"C:\Program Files\Octopus Deploy\Tentacle\Tentacle.exe" create-instance --instance "{{ tentacle_instance_name }}" --config "{{ tentacle_config }}"'
 
-    # - name: Generate a new certificate for the Tentacle
-    #   win_command: '"C:\Program Files\Octopus Deploy\Tentacle\Tentacle.exe" new-certificate --instance "{{ tentacle_instance_name }}"'
+    - name: Generate a new certificate for the Tentacle
+      win_command: '"C:\Program Files\Octopus Deploy\Tentacle\Tentacle.exe" new-certificate --instance "{{ tentacle_instance_name }}"'
 
-    # - name: Reset Tentacle trust
-    #   win_command: '"C:\Program Files\Octopus Deploy\Tentacle\Tentacle.exe" configure --instance "{{ tentacle_instance_name }}" --reset-trust'
+    - name: Reset Tentacle trust
+      win_command: '"C:\Program Files\Octopus Deploy\Tentacle\Tentacle.exe" configure --instance "{{ tentacle_instance_name }}" --reset-trust'
 
-    # - name: Configure Tentacle directories and port
-    #   win_command: '"C:\Program Files\Octopus Deploy\Tentacle\Tentacle.exe" configure --instance "{{ tentacle_instance_name }}" --home "C:\Octopus" --app "{{ tentacle_app_dir }}" --port "{{ tentacle_port }}"'
+    - name: Configure Tentacle directories and port
+      win_command: '"C:\Program Files\Octopus Deploy\Tentacle\Tentacle.exe" configure --instance "{{ tentacle_instance_name }}" --home "C:\Octopus" --app "{{ tentacle_app_dir }}" --port "{{ tentacle_port }}"'
 
-    # - name: Register Tentacle with Octopus Server
-    #   win_command: >
-    #     "C:\Program Files\Octopus Deploy\Tentacle\Tentacle.exe" register-with
-    #     --instance "{{ tentacle_instance_name }}"
-    #     --server "{{ octopus_server_url }}"
-    #     --name "{{ tentacle_name }}"
-    #     --environment "{{ tentacle_environment }}"
-    #     --role "{{ tentacle_role }}"
-    #     --server-comms-port "{{ server_comms_port }}"
-    #     --server-thumbprint "{{ octopus_server_thumbprint }}"
-    #     --apiKey "{{ octopus_api_key }}"
-    #     --comms-style TentaclePassive
+    - name: Register Tentacle with Octopus Server
+      win_command: >
+        "C:\Program Files\Octopus Deploy\Tentacle\Tentacle.exe" register-with
+        --instance "{{ tentacle_instance_name }}"
+        --server "{{ octopus_server_url }}"
+        --name "{{ tentacle_name }}"
+        --environment "{{ tentacle_environment }}"
+        --role "{{ tentacle_role }}"
+        --server-comms-port "{{ server_comms_port }}"
+        --apiKey "{{ octopus_api_key }}"
+        --comms-style TentaclePassive
 
-    # - name: Install and start the Tentacle service
-    #   win_command: '"C:\Program Files\Octopus Deploy\Tentacle\Tentacle.exe" service --install --start --instance "{{ tentacle_instance_name }}"'
+    - name: Install and start the Tentacle service
+      win_command: '"C:\Program Files\Octopus Deploy\Tentacle\Tentacle.exe" service --install --start --instance "{{ tentacle_instance_name }}"'
