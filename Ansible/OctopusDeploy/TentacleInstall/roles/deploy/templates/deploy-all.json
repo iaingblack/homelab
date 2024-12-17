@@ -1,0 +1,602 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "virtualMachineName": {
+            "type": "string",
+            "metadata": {
+                "description": "Please put in the name of the Virtual Instance(s) please keep character number to 13 as instance(s) are automatically numbered starting with the number one."
+            },
+            "minLength": 1
+        },
+        "virtualMachineStartingNumber": {
+            "type": "int",
+            "metadata": {
+                "description": "What is the starting number of the vm name"
+            },
+            "defaultValue": 1
+        },
+        "numberOfInstances": {
+            "type": "int",
+            "metadata": {
+                "description": "The Number of instance(s)."
+            },
+            "defaultValue": 1
+        },
+        "groupMembership": {
+            "type": "string",
+            "metadata": {
+                "description": "Please put in an AD group for local administation of instance(s). Example of AD Group - ad.moodys.net/AZRADM-MIT-SS-PRD-ALL-ALL-WIN"
+            },
+            "defaultValue": "AD Group Ex: AZRADM-MIT-SS-PRD-ALL-ALL-WIN / AZRADM-MIT-SS-PRD-ALL-ALL-NIX"
+        },
+        "groupMembershipDomainLocation": {
+            "type": "string",
+            "allowedValues": [
+                "analytics",
+                "ad",
+                "Mcoz"
+            ],
+            "defaultValue": "analytics",
+            "metadata": {
+                "description": "Active Directory Domain, Please choose 'analytics' for analytics.moodys.net, 'ad' for ad.moodys.net or Mcoz for Mcoz.tld"
+            }
+        },
+        "AvailabilitySet": {
+            "type": "string",
+            "allowedValues": [
+                "Yes",
+                "No"
+            ],
+            "metadata": {
+                "description": "Yes or No to use an Availability Set"
+            },
+            "defaultValue": "No"
+        },
+        "PlatformFaultDomainCount": {
+            "type": "int",
+            "metadata": {
+                "description": "A fault domain is a logical group of underlying hardware that share a common power source and network switch, similar to a rack within an on-premises datacenter. As you create VMs within an availability set, the Azure platform automatically distributes your VMs across these fault domains"
+            },
+            "defaultValue": 2
+        },
+        "PlatformUpdateDomainCount": {
+            "type": "int",
+            "metadata": {
+                "description": "Update domain is a logical group of underlying hardware that can undergo maintenance or be rebooted at the same time. As you create VMs within an availability set, the Azure platform automatically distributes your VMs across these update domains."
+            },
+            "defaultValue": 5
+        },
+        "AvailabilitySetName": {
+            "type": "string",
+            "metadata": {
+                "description": "The name of the availability set that the AD VM is created in"
+            },
+            "defaultValue": "I am not using an Availability Set"
+        },
+        "virtualMachineSize": {
+            "type": "string",
+            "allowedValues": [
+                "Standard_D1_v2",
+                "Standard_D2_v2",
+                "Standard_D3_v2",
+                "Standard_D4_v2",
+                "Standard_D5_v2",
+                "Standard_DS1_v2",
+                "Standard_DS2_v2",
+                "Standard_DS3_v2",
+                "Standard_DS4_v2",
+                "Standard_DS5_v2",
+                "Standard_D2_v3",
+                "Standard_D4_v3",
+                "Standard_D8_v3",
+                "Standard_D16_v3",
+                "Standard_D2s_v3",
+                "Standard_D4s_v3",
+                "Standard_D8s_v3",
+                "Standard_D16s_v3",
+                "Standard_F1",
+                "Standard_F2",
+                "Standard_F1",
+                "Standard_F4",
+                "Standard_F8",
+                "Standard_F16",
+                "Standard_F1s",
+                "Standard_F2s",
+                "Standard_F4s",
+                "Standard_F8s",
+                "Standard_F16s"
+            ],
+            "defaultValue": "Standard_D1_v2",
+            "metadata": {
+                "description": "This is the size of your VM Please see Hyper link for discription of instance sizes. https://docs.microsoft.com/en-us/azure/virtual-machines/windows/sizes"
+            }
+        },
+        "domainToJoin": {
+            "type": "string",
+            "allowedValues": [
+                "analytics.moodys.net",
+                "ad.moodys.net",
+                "Mcoz.tld"
+            ],
+            "defaultValue": "analytics.moodys.net",
+            "metadata": {
+                "description": "Active Directory Domain, Please choose 'analytics' for analytics.moodys.net, 'ad' for ad.moodys.net or Mcoz for Mcoz.tld"
+            }
+        },
+        "OperatingSystem": {
+            "type": "string",
+            "defaultValue": "Linux",
+            "allowedValues": [
+                "Linux",
+                "Windows"
+            ]
+        },
+        "OSVersion": {
+            "type": "string",
+            "defaultValue": "PRD-WINDOWS2019",
+            "allowedValues": [
+				"PRD-WINDOWS2019",
+				"PRD-Win2019SQL2019E",
+				"PRD-Windows2022",
+				"PRD-Windows2022Core",
+				"NPRD-WINDOWS2019",
+				"NPRD-Win2019SQL2019E",
+				"NPRD-Windows2022",
+				"NPRD-Windows2022Core",
+                "NPRD-RHEL9",
+                "PRD-RHEL9"
+            ]
+        },
+        "storageAccountType": {
+            "type": "string",
+            "defaultValue": "Standard_LRS",
+            "allowedValues": [
+                "Standard_LRS",
+                "Premium_LRS"
+            ]
+        },
+        "SiteName": {
+            "type": "string",
+            "allowedValues": [
+                "AAA",
+                "AAB",
+                "AAC",
+                "AAD",
+                "AAF",
+                "AAG",
+                "AAI",
+                "AAK",
+                "AAL",
+                "AAM",
+                "AAN",
+                "AAO",
+                "AXA",
+                "AXB",
+                "AAQ",
+                "QAA",
+                "QAB",
+                "QAC",
+                "QDA",
+                "QDB",
+                "QDC",
+                "QLA",
+                "QLB",
+                "QLC",
+                "QLD",
+                "AAP",
+                "QAI",
+                "QAJ",
+                "QDJ",
+                "QAK",
+                "QAL",
+                "QDK",
+				"QDS",
+				"QDT",
+				"QDU",
+				"CGP",
+				"QDV",
+				"QDW",
+				"QDX",
+				"QDY",
+				"QDZ",
+				"BGB",
+				"BGC",
+				"QEA"
+            ],
+            "metadata": {
+                "description": "Site Name"
+            },
+            "defaultValue": "AAA"
+        },
+        "SubnetName": {
+            "type": "string",
+            "allowedValues": [
+                "_DEVTOOLS_SN",
+                "_BE_SN",
+                "_APP_SN",
+                "_FE_SN",
+                "_BE_TRUST_SN",
+                "_APP_TRUST_SN",
+                "_FE_TRUST_SN",
+                "_BE_DMZ_SN",
+                "_APP_DMZ_SN",
+                "_FE_DMZ_SN",
+                "_NS_SNIP_SN"
+            ],
+            "metadata": {
+                "description": "Existing subnet name"
+            },
+            "defaultValue": "_DEVTOOLS_SN"
+        },
+        "LobDivision": {
+            "type": "string"
+        },
+        "application": {
+            "type": "string"
+        }
+    },
+    "variables": {
+        "SubscriptionName": "[subscription().displayName]",
+        "vmName": "[parameters('virtualMachineName')]",
+        "vmNumber": "[parameters('virtualMachineStartingNumber')]",
+        "vmSize": "[parameters('virtualMachineSize')]",
+        "nicName": "[concat('Nic-',variables('vmName'))]",
+        "storageSku": "[parameters('storageAccountType')]",
+        "VnetResourceGroupName": "[concat(parameters('SiteName'),'_RG')]",
+        "subnet": "[concat(parameters('SiteName'),parameters('subnetName'))]",
+        "vnetID": "[resourceId(variables('VnetResourceGroupName'), 'Microsoft.Network/virtualNetworks', parameters('SiteName'))]",
+        "subnetRef": "[concat(variables('vnetID'),'/subnets/', variables('subnet'))]",
+        "domainToJoin": "[split(parameters('domainToJoin'),'.')[0]]"
+    },
+    "resources": [
+        {
+            "apiVersion": "2018-02-01",
+            "condition": "[equals(parameters('OperatingSystem'),'Linux')]",
+            "name": "[concat('templateLinux-',variables('vmName'),'-',uniqueString(resourceGroup().id, deployment().name))]",
+            "type": "Microsoft.Resources/deployments",
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "https://armdata.blob.core.windows.net/armjson/LinuxBuildOut-Prd.json?sp=r&st=2022-06-01T21:25:16Z&se=2025-06-02T05:25:16Z&spr=https&sv=2020-08-04&sr=b&sig=g2kmeBllU4SfE2N8BMT2S8H2B8cbqWhCnZuRkdfdv4M%3D",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "vmName": {
+                        "value": "[variables('vmName')]"
+                    },
+                    "vmNumber": {
+                        "value": "[variables('vmNumber')]"
+                    },
+                    "nicName": {
+                        "value": "[variables('nicName')]"
+                    },
+                    "vmSize": {
+                        "value": "[variables('vmSize')]"
+                    },
+                    "subnetRef": {
+                        "value": "[variables('subnetRef')]"
+                    },
+                    "storageAccountKey": {
+                        "reference": {
+                            "keyVault": {
+                                "id": "/subscriptions/930cc519-3015-41af-bfff-d8d0a3db54d9/resourceGroups/StorageKeys/providers/Microsoft.KeyVault/vaults/StorageAccountKeys"
+                            },
+                            "secretName": "imagefactory"
+                        }
+                    },
+                    "localAdminUsername": {
+                        "reference": {
+                            "keyVault": {
+                                "id": "/subscriptions/930cc519-3015-41af-bfff-d8d0a3db54d9/resourceGroups/DomainJoinKey/providers/Microsoft.KeyVault/vaults/MoodysDomainJoin"
+                            },
+                            "secretName": "LocalUser"
+                        }
+                    },
+                    "localAdminPassword": {
+                        "reference": {
+                            "keyVault": {
+                                "id": "/subscriptions/930cc519-3015-41af-bfff-d8d0a3db54d9/resourceGroups/DomainJoinKey/providers/Microsoft.KeyVault/vaults/MoodysDomainJoin"
+                            },
+                            "secretName": "LocalCreds"
+                        }
+                    },
+                    "domainUsername": {
+                        "reference": {
+                            "keyVault": {
+                                "id": "/subscriptions/930cc519-3015-41af-bfff-d8d0a3db54d9/resourceGroups/DomainJoinKey/providers/Microsoft.KeyVault/vaults/MoodysDomainJoin"
+                            },
+                            "secretName": "DomainUserName"
+                        }
+                    },
+                    "domainPassword": {
+                        "reference": {
+                            "keyVault": {
+                                "id": "/subscriptions/930cc519-3015-41af-bfff-d8d0a3db54d9/resourceGroups/DomainJoinKey/providers/Microsoft.KeyVault/vaults/MoodysDomainJoin"
+                            },
+                            "secretName": "ADjoin"
+                        }
+                    },
+                    "domainUsername-Mcoz": {
+                        "reference": {
+                            "keyVault": {
+                                "id": "/subscriptions/930cc519-3015-41af-bfff-d8d0a3db54d9/resourceGroups/DomainJoinKey/providers/Microsoft.KeyVault/vaults/MoodysDomainJoin"
+                            },
+                            "secretName": "DomainUser-Mcoz"
+                        }
+                    },
+                    "domainPassword-Mcoz": {
+                        "reference": {
+                            "keyVault": {
+                                "id": "/subscriptions/930cc519-3015-41af-bfff-d8d0a3db54d9/resourceGroups/DomainJoinKey/providers/Microsoft.KeyVault/vaults/MoodysDomainJoin"
+                            },
+                            "secretName": "Adjoin-Mcoz"
+                        }
+                    },
+                    "AWS-SSM-Code": {
+                        "reference": {
+                            "keyVault": {
+                            "id": "/subscriptions/930cc519-3015-41af-bfff-d8d0a3db54d9/resourceGroups/rg-aws-ssm/providers/Microsoft.KeyVault/vaults/aws-ssm"
+                        },
+                        "secretName": "[concat(parameters('SiteName'),'-ssm-code')]"
+                        }
+                    },
+                    "AWS-SSM-Id": {
+                        "reference": {
+                            "keyVault": {
+                            "id": "/subscriptions/930cc519-3015-41af-bfff-d8d0a3db54d9/resourceGroups/rg-aws-ssm/providers/Microsoft.KeyVault/vaults/aws-ssm"
+                        },
+                        "secretName": "[concat(parameters('SiteName'),'-ssm-id')]"
+                        }
+                    },
+                    "domainToJoin": {
+                        "value": "[variables('domainToJoin')]"
+                    },
+                    "groupMembership": {
+                        "value": "[parameters('groupmembership')]"
+                    },
+                    "groupMembershipDomainLocation": {
+                        "value": "[parameters('groupMembershipDomainLocation')]"
+                    },
+                    "AvailabilitySet": {
+                        "value": "[parameters('AvailabilitySet')]"
+                    },
+                    "PlatformFaultDomainCount": {
+                        "value": "[parameters('PlatformFaultDomainCount')]"
+                    },
+                    "PlatformUpdateDomainCount": {
+                        "value": "[parameters('PlatformUpdateDomainCount')]"
+                    },
+                    "AvailabilitySetName": {
+                        "value": "[parameters('AvailabilitySetName')]"
+                    },
+                    "numberOfInstances": {
+                        "value": "[parameters('numberOfInstances')]"
+                    },
+                    "OSVersion": {
+                        "value": "[parameters('OSVersion')]"
+                    },
+                    "storageSku": {
+                        "value": "[variables('storageSku')]"
+                    },
+                    "LobDivision": {
+                        "value": "[parameters('LobDivision')]"
+                    },
+                    "application": {
+                        "value": "[parameters('application')]"
+                    }
+                }
+            }
+        },
+        {
+            "apiVersion": "2018-05-01",
+            "condition": "[equals(parameters('OperatingSystem'),'Windows')]",
+            "name": "[concat('templateWindows-',variables('vmName'),'-',uniqueString(resourceGroup().id, deployment().name))]",
+            "type": "Microsoft.Resources/deployments",
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "https://armdata.blob.core.windows.net/armjson/WindowsBuildOut-Prd.json?sp=r&st=2022-06-01T21:26:54Z&se=2025-06-02T05:26:54Z&spr=https&sv=2020-08-04&sr=b&sig=3%2BfB769w19TJ8Fs31%2FcYVXrmch4q41bZqC6wCr2Rtyg%3D",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "SubscriptionName": {
+                        "value": "[variables('SubscriptionName')]"
+                    },
+                    "vmNumber": {
+                        "value": "[variables('vmNumber')]"
+                    },
+                    "vmName": {
+                        "value": "[variables('vmName')]"
+                    },
+                    "nicName": {
+                        "value": "[variables('nicName')]"
+                    },
+                    "vmSize": {
+                        "value": "[variables('vmSize')]"
+                    },
+                    "subnetRef": {
+                        "value": "[variables('subnetRef')]"
+                    },
+                    "storageAccountKey": {
+                        "reference": {
+                            "keyVault": {
+                                "id": "/subscriptions/930cc519-3015-41af-bfff-d8d0a3db54d9/resourceGroups/StorageKeys/providers/Microsoft.KeyVault/vaults/StorageAccountKeys"
+                            },
+                            "secretName": "imagefactory"
+                        }
+                    },
+                    "vmAdminUsername": {
+                        "reference": {
+                            "keyVault": {
+                                "id": "/subscriptions/930cc519-3015-41af-bfff-d8d0a3db54d9/resourceGroups/DomainJoinKey/providers/Microsoft.KeyVault/vaults/MoodysDomainJoin"
+                            },
+                            "secretName": "LocalUser"
+                        }
+                    },
+                    "vmAdminPassword": {
+                        "reference": {
+                            "keyVault": {
+                                "id": "/subscriptions/930cc519-3015-41af-bfff-d8d0a3db54d9/resourceGroups/DomainJoinKey/providers/Microsoft.KeyVault/vaults/MoodysDomainJoin"
+                            },
+                            "secretName": "LocalCreds"
+                        }
+                    },
+                    "domainToJoin": {
+                        "value": "[variables('domainToJoin')]"
+                    },
+                    "domainToJoinFullName": {
+                        "value": "[parameters('domainToJoin')]"
+                    },
+                    "groupMembership": {
+                        "value": "[parameters('groupmembership')]"
+                    },
+                    "groupMembershipDomainLocation": {
+                        "value": "[parameters('groupMembershipDomainLocation')]"
+                    },
+                    "AvailabilitySet": {
+                        "value": "[parameters('AvailabilitySet')]"
+                    },
+                    "PlatformFaultDomainCount": {
+                        "value": "[parameters('PlatformFaultDomainCount')]"
+                    },
+                    "PlatformUpdateDomainCount": {
+                        "value": "[parameters('PlatformUpdateDomainCount')]"
+                    },
+                    "AvailabilitySetName": {
+                        "value": "[parameters('AvailabilitySetName')]"
+                    },
+                    "domainUsername": {
+                        "reference": {
+                            "keyVault": {
+                                "id": "/subscriptions/930cc519-3015-41af-bfff-d8d0a3db54d9/resourceGroups/DomainJoinKey/providers/Microsoft.KeyVault/vaults/MoodysDomainJoin"
+                            },
+                            "secretName": "DomainUserName-Windows"
+                        }
+                    },
+                    "domainPassword": {
+                        "reference": {
+                            "keyVault": {
+                                "id": "/subscriptions/930cc519-3015-41af-bfff-d8d0a3db54d9/resourceGroups/DomainJoinKey/providers/Microsoft.KeyVault/vaults/MoodysDomainJoin"
+                            },
+                            "secretName": "ADjoin"
+                        }
+                    },
+                    "domainUsername-Mcoz": {
+                        "reference": {
+                            "keyVault": {
+                                "id": "/subscriptions/930cc519-3015-41af-bfff-d8d0a3db54d9/resourceGroups/DomainJoinKey/providers/Microsoft.KeyVault/vaults/MoodysDomainJoin"
+                            },
+                            "secretName": "DomainUser-Mcoz"
+                        }
+                    },
+                    "domainPassword-Mcoz": {
+                        "reference": {
+                            "keyVault": {
+                                "id": "/subscriptions/930cc519-3015-41af-bfff-d8d0a3db54d9/resourceGroups/DomainJoinKey/providers/Microsoft.KeyVault/vaults/MoodysDomainJoin"
+                            },
+                            "secretName": "Adjoin-Mcoz"
+                        }
+                    },
+                    "AWS-SSM-Code": {
+                        "reference": {
+                            "keyVault": {
+                            "id": "/subscriptions/930cc519-3015-41af-bfff-d8d0a3db54d9/resourceGroups/rg-aws-ssm/providers/Microsoft.KeyVault/vaults/aws-ssm"
+                        },
+                        "secretName": "[concat(parameters('SiteName'),'-ssm-code')]"
+                        }
+                    },
+                    "AWS-SSM-Id": {
+                        "reference": {
+                            "keyVault": {
+                            "id": "/subscriptions/930cc519-3015-41af-bfff-d8d0a3db54d9/resourceGroups/rg-aws-ssm/providers/Microsoft.KeyVault/vaults/aws-ssm"
+                        },
+                        "secretName": "[concat(parameters('SiteName'),'-ssm-id')]"
+                        }
+                    },
+                    "numberOfInstances": {
+                        "value": "[parameters('numberOfInstances')]"
+                    },
+                    "OSVersion": {
+                        "value": "[parameters('OSVersion')]"
+                    },
+                    "storageSku": {
+                        "value": "[variables('storageSku')]"
+                    },
+                    "LobDivision": {
+                        "value": "[parameters('LobDivision')]"
+                    },
+                    "application": {
+                        "value": "[parameters('application')]"
+                    }
+                }
+            }
+        }
+    ],
+    "outputs": {
+        "SubscriptionName": {
+            "type": "string",
+            "value": "[variables('SubscriptionName')]"
+        },
+        "vmNumber": {
+            "type": "int",
+            "value": "[variables('vmNumber')]"
+        },
+        "numberOfInstances": {
+            "type": "int",
+            "value": "[parameters('numberOfInstances')]"
+        },
+        "groupMembership": {
+            "type": "string",
+            "value": "[parameters('groupMembership')]"
+        },
+        "groupMembershipDomainLocation": {
+            "type": "string",
+            "value": "[parameters('groupMembershipDomainLocation')]"
+        },
+        "AvailabilitySet": {
+            "type": "string",
+            "value": "[parameters('AvailabilitySet')]"
+        },
+        "PlatformFaultDomainCount": {
+            "type": "int",
+            "value": "[parameters('PlatformFaultDomainCount')]"
+        },
+        "PlatformUpdateDomainCount": {
+            "type": "int",
+            "value": "[parameters('PlatformUpdateDomainCount')]"
+        },
+        "AvailabilitySetName": {
+            "type": "string",
+            "value": "[parameters('AvailabilitySetName')]"
+        },
+        "vmSize": {
+            "type": "string",
+            "value": "[variables('vmSize')]"
+        },
+        "domainToJoin": {
+            "type": "string",
+            "value": "[parameters('domainToJoin')]"
+        },
+        "OSVersion": {
+            "type": "string",
+            "value": "[parameters('OSVersion')]"
+        },
+        "storageSku": {
+            "type": "string",
+            "value": "[variables('storageSku')]"
+        },
+        "subnetRef": {
+            "type": "string",
+            "value": "[variables('subnetRef')]"
+        },
+        "LobDivision": {
+            "type": "string",
+            "value": "[parameters('LobDivision')]"
+        },
+        "application": {
+            "type": "string",
+            "value": "[parameters('application')]"
+        }
+    }
+}

@@ -1,0 +1,13 @@
+availabilitySet: "No"
+domainToJoin: "analytics.moodys.net"
+LobDivision: "ma-ers-ins"
+azure_vms: "azure_vms"
+
+# Ocrtopus Deploy
+tentacle_service_port: 10933
+octopus_deploy_service_account: "builduser"
+octopus_server_certificate_thumbprint: "9F12EA1194018B70B48142F22EC1661243224F33"
+octopus_server_http_or_https: "http"
+octopus_server_api_key: "API-AWZGEFDSCYK0JSHONKM5YSPLMLY"
+octopus_server_fqdn: "aad-wxoctopus1.analytics.moodys.net"
+octopus_space_id: "Spaces-1"

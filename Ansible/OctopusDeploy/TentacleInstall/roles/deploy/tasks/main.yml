@@ -1,0 +1,69 @@
+# Good example: https://github.com/ismc/an-demo-kit/blob/6b912593711b6eba5c77224f64f0a4df900fecc2/roles/cloud-config/tasks/azure-template.yml#L55
+
+# We want to create things in a loop, so we need to loop over the instances dictionary and create the resource groups and deploy the ARM templates individually, and in parallel
+- name: Create required resource groups
+  azure_rm_resourcegroup:
+    name: "{{ item.value.resourceGroupName }}"
+    location: "{{ location }}"
+    tags:
+      iainblack: "{{ lookup('pipe', 'date +%Y-%m-%d-%H-%M-%S') }}-{{ item.key }}"
+  # loop: "{{ instances | dict2items }}"
+  with_items: "{{ instances | dict2items }}"
+
+- name: Create Azure Deployments
+  azure_rm_deployment:
+    name: "{{ lookup('pipe', 'date +%Y-%m-%d-%H-%M-%S') }}-{{ item.key }}"
+    location: "{{ location }}"
+    resource_group: "{{ item.value.resourceGroupName }}"
+    wait_for_deployment_completion: yes
+    deployment_mode: "incremental"
+    template: "{{ lookup('template', 'deploy-all.json') }}"
+    parameters:
+      # VM Instance Parameters
+      virtualMachineName:
+        value: "{{ item.value.virtualMachineName }}"
+      virtualMachineStartingNumber:
+        value: "{{ item.value.virtualMachineStartingNumber | int }}"
+      numberOfInstances:
+        value: "{{ item.value.numberOfInstances | int }}"
+      virtualMachineSize:
+        value: "{{ item.value.virtualMachineSize }}"
+      osVersion:
+        value: "{{ item.value.osVersion }}"
+      # Passed Depoyment NPRD/PROD and OS Parameters
+      groupMembershipDomainLocation:
+        value: "{{ groupMembershipDomainLocation }}"
+      groupMembership:
+        value: "{{ groupMembership }}"                       
+      operatingSystem:
+        value: "{{ operatingSystem }}"
+      siteName:
+        value: "{{ siteName }}"
+      subnetName:
+        value: "{{ subnetName }}"
+      # Misc Ones we Shouldnt Really Change
+      availabilitySet:                                    
+        value: "{{ availabilitySet }}"
+      domainToJoin:                                    
+        value: "{{ domainToJoin }}"
+      LobDivision:                                    
+        value: "{{ lobDivision | default('ma-ers-ins')  }}"
+      application:
+        value: "{{ application | default('ERS-INS-EDI-Infrastructure') }}"
+  with_items: "{{ instances | dict2items }}"
+  # # Just fire and forget. Remove, or add a poll if you want it to create them sequentially. They don't seem to deploy in parallel even with a poll
+  # Uncomment this to see errors in the code
+  register: async_deployment_results_per_instance
+  async: 3600
+  poll: 0
+
+# Should work, but doesnt... 
+# "The conditional check 'async_poll_results.finished' failed. The error was: 'bool' object has no attribute 'strip'"
+# - name: Wait for deployments to finish
+#   async_status:
+#     jid: "{{ async_result_item.ansible_job_id }}"
+#   with_items: "{{ async_deployment_results_per_instance.results }}"
+#   loop_control:
+#     loop_var: "async_result_item"
+#   register: async_poll_results
+#   until: async_poll_results.finished | bool
