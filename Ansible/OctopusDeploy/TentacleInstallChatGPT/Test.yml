@@ -1,0 +1,34 @@
+---
+- name: Install and configure Octopus Tentacle on Windows
+  hosts: windows
+  gather_facts: yes
+
+  vars:
+    octopus_server_url: "http://192.168.1.239"
+    octopus_server_thumbprint: "2BFB75FA3F20C034CB91920D59A6E39D59BBDBA6"
+    tentacle_instance_name: "Tentacle"
+    tentacle_name: "{{ inventory_hostname }}"
+    tentacle_environment: "Test"
+    tentacle_role: "web-server"
+    tentacle_port: "10933"
+    tentacle_dir: "C:\\Octopus\\Tentacle"
+    tentacle_config: "C:\\Octopus\\Tentacle\\Tentacle.config"
+    tentacle_app_dir: "C:\\Octopus\\Applications"
+    server_comms_port: "10943"
+    # Provide these as part of install
+    # octopus_api_key: "API-5PM3FUISORY9PTIIKTWFSIRCJO99L83Z"
+
+
+
+  tasks:
+    - name: Assert that octopus_api_key is defined
+      assert:
+        that:
+          - octopus_api_key is defined
+        fail_msg: "octopus_api_key must be provided."
+
+    - name: Ensure Tentacle directory exists
+      win_file:
+        path: "{{ tentacle_dir }}"
+        state: directory
+        
