@@ -6,7 +6,6 @@
   vars:
     octopus_server_url: "http://192.168.1.239"
     octopus_server_thumbprint: "2BFB75FA3F20C034CB91920D59A6E39D59BBDBA6"
-    octopus_api_key: "API-5PM3FUISORY9PTIIKTWFSIRCJO99L83Z"
     tentacle_instance_name: "Tentacle"
     tentacle_name: "{{ inventory_hostname }}"
     tentacle_environment: "Test"
@@ -15,10 +14,19 @@
     tentacle_dir: "C:\\Octopus\\Tentacle"
     tentacle_config: "C:\\Octopus\\Tentacle\\Tentacle.config"
     tentacle_app_dir: "C:\\Octopus\\Applications"
-    # Adjust the server comms port if needed, default is often 10943 for Octopus Server
     server_comms_port: "10943"
+    # Provide these as part of install
+    # octopus_api_key: "API-5PM3FUISORY9PTIIKTWFSIRCJO99L83Z"
+
+
 
   tasks:
+    - name: Assert that both octopus_api_key is defined
+      assert:
+        that:
+          - octopus_api_key is defined
+        fail_msg: "octopus_api_key must be provided."
+
     - name: Ensure Chocolatey is installed
       win_chocolatey:
         name: chocolatey
