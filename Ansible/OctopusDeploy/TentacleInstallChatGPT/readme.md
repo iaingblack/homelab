@@ -19,14 +19,14 @@ How to use
 
 Workgroup VMs
 ```
-ansible-playbook -i hosts-workgroup Test.yml            -e "@./winrm/workgroup.yml" -e octopus_api_key="API-5PM3FUISORY9PTIIKTWFSIRCJO99L83Z"
-ansible-playbook -i hosts-workgroup InstallTentacle.yml -e "@./winrm/workgroup.yml" -e octopus_api_key="API-5PM3FUISORY9PTIIKTWFSIRCJO99L83Z"
-ansible-playbook -i hosts-workgroup RemoveTentacle.yml  -e "@./winrm/workgroup.yml" -e octopus_api_key="API-5PM3FUISORY9PTIIKTWFSIRCJO99L83Z"
+ansible-playbook -i hosts -i hosts-domain-vars Test.yml            -e octopus_api_key="API-5PM3FUISORY9PTIIKTWFSIRCJO99L83Z"
+ansible-playbook -i hosts -i hosts-domain-vars InstallTentacle.yml -e octopus_api_key="API-5PM3FUISORY9PTIIKTWFSIRCJO99L83Z"
+ansible-playbook -i hosts -i hosts-domain-vars RemoveTentacle.yml  -e octopus_api_key="API-5PM3FUISORY9PTIIKTWFSIRCJO99L83Z"
 ```
 
 Domain VMs
 ```
-ansible-playbook -i hosts Test.yml            -e "@./winrm/domain.yml" -e octopus_api_key="API-5PM3FUISORY9PTIIKTWFSIRCJO99L83Z"
-ansible-playbook -i hosts InstallTentacle.yml -e "@./winrm/domain.yml" -e octopus_api_key="API-5PM3FUISORY9PTIIKTWFSIRCJO99L83Z"
-ansible-playbook -i hosts RemoveTentacle.yml  -e "@./winrm/domain.yml" -e octopus_api_key="API-5PM3FUISORY9PTIIKTWFSIRCJO99L83Z"
+ansible-playbook -i hosts -i hosts-workgroup-vars Test.yml            -e octopus_api_key="API-5PM3FUISORY9PTIIKTWFSIRCJO99L83Z"
+ansible-playbook -i hosts -i hosts-workgroup-vars InstallTentacle.yml -e octopus_api_key="API-5PM3FUISORY9PTIIKTWFSIRCJO99L83Z"
+ansible-playbook -i hosts -i hosts-workgroup-vars RemoveTentacle.yml  -e octopus_api_key="API-5PM3FUISORY9PTIIKTWFSIRCJO99L83Z"
 ```
