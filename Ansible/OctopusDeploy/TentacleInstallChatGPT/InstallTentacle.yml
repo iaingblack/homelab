@@ -27,6 +27,29 @@
           - octopus_api_key is defined
         fail_msg: "octopus_api_key must be provided."
 
+    # Check if machine already exists in Octopus before starting installation
+    - name: Get list of machines from Octopus by name
+      uri:
+        url: "{{ octopus_server_url }}/api/machines?name={{ tentacle_name }}"
+        method: GET
+        headers:
+          X-Octopus-ApiKey: "{{ octopus_api_key }}"
+        return_content: yes
+      register: machines_response
+      delegate_to: localhost
+
+    - name: Extract machine ID
+      set_fact:
+        tentacle_machine_id: "{{ (machines_response.json.Items|default([])|first).Id if machines_response.json.TotalResults > 0 else None }}"
+      delegate_to: localhost
+
+    - name: Fail if the machine already exists in Octopus
+      fail:
+        msg: "Machine named {{ tentacle_name }} already found in Octopus. Quitting"
+      when: tentacle_machine_id
+      delegate_to: localhost
+
+    # Machine does not already exist, can install Tentacle and register with Octopus
     - name: Ensure Chocolatey is installed
       win_chocolatey:
         name: chocolatey
