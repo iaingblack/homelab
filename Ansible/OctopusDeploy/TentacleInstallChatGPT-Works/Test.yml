@@ -27,16 +27,6 @@
           - octopus_api_key is defined
         fail_msg: "octopus_api_key must be provided."
 
-    - name: Get list of machines from Octopus by name
-      uri:
-        url: "{{ octopus_server_url }}/api/machines?name={{ tentacle_name }}"
-        method: GET
-        headers:
-          X-Octopus-ApiKey: "{{ octopus_api_key }}"
-        return_content: yes
-      register: machines_response
-      delegate_to: localhost
-      
     - name: Ensure Tentacle directory exists
       win_file:
         path: "{{ tentacle_dir }}"

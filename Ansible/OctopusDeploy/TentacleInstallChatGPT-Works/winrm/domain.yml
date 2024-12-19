@@ -1,0 +1,15 @@
+# Domain-specific credentials (ensure these are stored securely)
+# ansible_user: "MYDOMAIN\\myuser"
+# ansible_password: "SuperSecretPassword123!"
+
+# Connection details - possibly different transports or ports for domain-joined hosts
+ansible_connection: winrm
+ansible_winrm_server_cert_validation: ignore
+ansible_winrm_transport: ntlm
+ansible_winrm_port: 5986
+
+
+# Domain-specific variables
+# domain_name: "mydomain.local"
+# default_dns_suffix: "mydomain.local"
+# domain_joined: true

@@ -1,0 +1,55 @@
+---
+- name: Remove Octopus Tentacle from Server and Windows OS
+  hosts: windows
+  gather_facts: yes
+
+  vars:
+    octopus_server_url: "http://192.168.1.239"
+    tentacle_instance_name: "Tentacle"
+    tentacle_name: "{{ inventory_hostname }}"
+    tentacle_port: "10933"
+    # Provide these as part of install
+    # octopus_api_key: "API-5PM3FUISORY9PTIIKTWFSIRCJO99L83Z"
+
+
+  tasks:
+    - name: Assert that both octopus_api_key is defined
+      assert:
+        that:
+          - octopus_api_key is defined
+        fail_msg: "octopus_api_key must be provided."
+
+    - name: Get list of machines from Octopus by name
+      uri:
+        url: "{{ octopus_server_url }}/api/machines?name={{ tentacle_name }}"
+        method: GET
+        headers:
+          X-Octopus-ApiKey: "{{ octopus_api_key }}"
+        return_content: yes
+      register: machines_response
+      delegate_to: localhost
+
+    - name: Extract machine ID
+      set_fact:
+        tentacle_machine_id: "{{ (machines_response.json.Items|default([])|first).Id if machines_response.json.TotalResults > 0 else None }}"
+      delegate_to: localhost
+
+    - name: Fail if the machine does not exist in Octopus
+      fail:
+        msg: "Machine named {{ tentacle_name }} not found in Octopus."
+      when: tentacle_machine_id is none
+      delegate_to: localhost
+
+    - name: Remove machine from Octopus Server
+      uri:
+        url: "{{ octopus_server_url }}/api/machines/{{ tentacle_machine_id }}"
+        method: DELETE
+        headers:
+          X-Octopus-ApiKey: "{{ octopus_api_key }}"
+      register: delete_response
+      delegate_to: localhost
+
+    - name: UnInstall Octopus Deploy Tentacle via Chocolatey
+      win_chocolatey:
+        name: octopusdeploy.tentacle
+        state: absent

@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 python:3.10-bookworm
+FROM python:3.10-bookworm
 
 ENV ANSIBLE_JINJA2_NATIVE True
 RUN apt-get update && apt-get upgrade -y

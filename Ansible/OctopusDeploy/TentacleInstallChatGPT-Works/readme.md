@@ -2,7 +2,7 @@ Install Ansible
 
 Go to correct folder
 ```
-cd Ansible/OctopusDeploy/TentacleInstallChatGPT
+cd Ansible\OctopusDeploy\TentacleInstallChatGPT
 ```
 
 Build ansible container
