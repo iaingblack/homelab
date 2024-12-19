@@ -1,3 +1,3 @@
 [windows]
-nuc-win-pc1 ansible_host=192.168.1.231
+nuc-win-pc1 ansible_host=192.168.1.231 tentacle_environment=Chocolatey tentacle_role=from_ansible
 nuc-windowsserver ansible_host=192.168.1.115

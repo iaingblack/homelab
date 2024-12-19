@@ -3,13 +3,12 @@
   hosts: windows
   gather_facts: yes
 
+  # See windows group_vars for per default host roles and environments, override in hosts file per host
   vars:
     octopus_server_url: "http://192.168.1.239"
     octopus_server_thumbprint: "2BFB75FA3F20C034CB91920D59A6E39D59BBDBA6"
     tentacle_instance_name: "Tentacle"
     tentacle_name: "{{ inventory_hostname }}"
-    tentacle_environment: "Test"
-    tentacle_role: "web-server"
     tentacle_port: "10933"
     tentacle_dir: "C:\\Octopus\\Tentacle"
     tentacle_config: "C:\\Octopus\\Tentacle\\Tentacle.config"
