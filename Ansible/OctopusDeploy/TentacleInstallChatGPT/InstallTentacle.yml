@@ -17,8 +17,6 @@
     # Provide these as part of install
     # octopus_api_key: "API-5PM3FUISORY9PTIIKTWFSIRCJO99L83Z"
 
-
-
   tasks:
     - name: Assert that both octopus_api_key is defined
       assert:
@@ -87,14 +85,18 @@
     - name: Configure Tentacle directories and port
       win_command: '"C:\Program Files\Octopus Deploy\Tentacle\Tentacle.exe" configure --instance "{{ tentacle_instance_name }}" --home "C:\Octopus" --app "{{ tentacle_app_dir }}" --port "{{ tentacle_port }}"'
 
-    - name: Register Tentacle with Octopus Server
+    - name: Register Tentacle with multiple environments and roles in one go
       win_command: >
         "C:\Program Files\Octopus Deploy\Tentacle\Tentacle.exe" register-with
         --instance "{{ tentacle_instance_name }}"
         --server "{{ octopus_server_url }}"
         --name "{{ tentacle_name }}"
-        --environment "{{ tentacle_environment }}"
-        --role "{{ tentacle_role }}"
+        {% for env in tentacle_environments %}
+        --environment "{{ env }}"
+        {% endfor %}
+        {% for role in tentacle_roles %}
+        --role "{{ role }}"
+        {% endfor %}
         --server-comms-port "{{ server_comms_port }}"
         --apiKey "{{ octopus_api_key }}"
         --comms-style TentaclePassive
