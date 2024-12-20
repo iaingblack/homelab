@@ -1,0 +1,8 @@
+[windows]
+#nuc-win-pc1 ansible_host=192.168.1.231 tentacle_environments='["Chocolatey","EnvA","EnvB"]' tentacle_roles='["from_ansible","web-server"]'
+#nuc-windowsserver ansible_host=192.168.1.115 tentacle_environments='["Chocolatey"]' tentacle_roles='["from_ansible"]'
+
+# DCs
+nuc-win-dc  ansible_host=192.168.1.230 tentacle_environments='["NUC-Win-DC-VMs"]' tentacle_roles='["domain-controller","nuc-dc-vm"]'
+nuc-win-pc1 ansible_host=192.168.1.231 tentacle_environments='["NUC-Win-DC-VMs"]' tentacle_roles='["member-server","nuc-dc-vm"]'
+nuc-win-pc2 ansible_host=192.168.1.232 tentacle_environments='["NUC-Win-DC-VMs"]' tentacle_roles='["member-server","nuc-dc-vm"]'

@@ -1,0 +1,9 @@
+[windows:vars]
+ansible_user=administrator
+ansible_password=Password1!
+
+# Connection details - possibly different transports or ports for domain-joined hosts
+ansible_connection=winrm
+ansible_winrm_server_cert_validation=ignore
+ansible_winrm_transport=ntlm
+ansible_winrm_port=5985
