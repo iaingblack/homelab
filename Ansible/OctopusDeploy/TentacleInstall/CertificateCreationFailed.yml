@@ -1,0 +1,45 @@
+- name: Create Scripts folder
+  ansible.windows.win_file:
+    path: C:\scripts
+    state: directory
+
+- name: Upload the Octopus Installer Script for the Scheduled Task
+  win_copy:
+      src: files/create-certificate.ps1
+      dest: "C:\\scripts\\"
+      remote_src: no
+      force: true
+
+- name: "Update Local Security Policy to allow user octopus_deploy_service_account to run scheduled tasks"
+  ansible.windows.win_user_right:
+    name: SeBatchLogonRight
+    users:
+    - "{{ ansible_user }}"
+    action: add
+
+- name: Create a Scheduled Task to Install the Tentacle to Avoid the Remote Certificate Generation Issue
+  win_scheduled_task:
+      name: Install Octopus Deploy
+      description: Install
+      actions:
+          - path: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+            arguments: -ExecutionPolicy Unrestricted -NonInteractive -File c:\scripts\create-certificate.ps1
+      triggers:
+          - type: daily
+            start_boundary: "2050-01-01T00:00:00Z" # Just a random time, we dont use this
+      username: SYSTEM
+      state: present
+      enabled: yes
+      run_level: highest
+
+- name: Manually Run the Scheduled Task
+  win_shell: Start-ScheduledTask -TaskName "Install Octopus Deploy"
+
+- name: Pause for 10 seconds to allow the Scheduled Task to complete
+  pause:
+      seconds: 10
+
+- name: Delete the Install Tentacle Scheduled Task
+  win_scheduled_task:
+      name: Install Octopus Deploy
+      state: absent

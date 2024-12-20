@@ -18,6 +18,11 @@
         that:
           - octopus_api_key is defined
         fail_msg: "octopus_api_key must be provided."
+    
+    - name: UnInstall Octopus Deploy Tentacle via Chocolatey
+      win_chocolatey:
+        name: octopusdeploy.tentacle
+        state: absent
 
     - name: Get list of machines from Octopus by name
       uri:
@@ -48,8 +53,3 @@
           X-Octopus-ApiKey: "{{ octopus_api_key }}"
       register: delete_response
       delegate_to: localhost
-
-    - name: UnInstall Octopus Deploy Tentacle via Chocolatey
-      win_chocolatey:
-        name: octopusdeploy.tentacle
-        state: absent

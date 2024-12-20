@@ -78,6 +78,13 @@
 
     - name: Generate a new certificate for the Tentacle
       win_command: '"C:\Program Files\Octopus Deploy\Tentacle\Tentacle.exe" new-certificate --instance "{{ tentacle_instance_name }}"'
+      register: certificate_creation
+      ignore_errors: yes
+
+    # Need to do funkier stuff if the certificate creation fails
+    - name: Include Specific Certificate Creation Tasks if the Certificate Creation Fails
+      include_tasks: CertificateCreationFailed.yml
+      when: certificate_creation is failed
 
     - name: Reset Tentacle trust
       win_command: '"C:\Program Files\Octopus Deploy\Tentacle\Tentacle.exe" configure --instance "{{ tentacle_instance_name }}" --reset-trust'
@@ -103,3 +110,8 @@
 
     - name: Install and start the Tentacle service
       win_command: '"C:\Program Files\Octopus Deploy\Tentacle\Tentacle.exe" service --install --start --instance "{{ tentacle_instance_name }}"'
+
+    - name: Ensure the service is started
+      win_service:
+        name: "OctopusDeploy Tentacle"
+        state: started

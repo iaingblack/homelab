@@ -1,0 +1,97 @@
+# We limit concurrency here as Chocolatey can throttle lots of simultaneous installs and blacklist our IP
+- name: Install Octopus Tentacle using chocolatey
+  win_chocolatey:
+      name: octopusdeploy.tentacle
+      # version: "{{ octopus_tentacle_version }}"
+      pinned: yes
+      state: present
+  throttle: 1
+
+- name: Create Scripts folder
+  ansible.windows.win_file:
+    path: C:\scripts
+    state: directory
+
+- name: Upload the Octopus Installer Script for the Scheduled Task
+  win_copy:
+      src: files/install-tentacle.ps1
+      dest: "C:\\scripts\\"
+      remote_src: no
+      force: true
+
+- name: "Update Local Security Policy to allow user octopus_deploy_service_account to run scheduled tasks"
+  ansible.windows.win_user_right:
+    name: SeBatchLogonRight
+    users:
+    - "{{ octopus_deploy_service_account }}"
+    action: add
+
+- name: Create a Scheduled Task to Install the Tentacle to Avoid the Remote Certificate Generation Issue
+  win_scheduled_task:
+      name: Install Octopus Deploy
+      description: Install
+      actions:
+          - path: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+            arguments: -ExecutionPolicy Unrestricted -NonInteractive -File c:\scripts\install-tentacle.ps1 -tentacle_service_port "10933" -octopus_server_certificate_thumbprint "{{ octopus_server_certificate_thumbprint }}"
+      triggers:
+          - type: daily
+            start_boundary: "2050-01-01T00:00:00Z" # Just a random time, we dont use this
+      username: SYSTEM
+      state: present
+      enabled: yes
+      run_level: highest
+
+- name: Manually Run the Scheduled Task
+  win_shell: Start-ScheduledTask -TaskName "Install Octopus Deploy"
+
+- name: Pause for 20 seconds to allow the Scheduled Task to complete. 20 seconds is plenty in most cases
+  pause:
+      seconds: 20
+
+- name: Delete the Install Tentacle Scheduled Task
+  win_scheduled_task:
+      name: Install Octopus Deploy
+      state: absent
+
+- name: Restart service, set startup to auto, and also delayed mode as the agent sometimes fails on boot
+  win_service:
+      name: "OctopusDeploy Tentacle"
+      start_mode: delayed
+      state: restarted
+
+- name: Test we can get the Octopus Tentacle thumbprint without error. If so, success!
+  win_shell: |
+      cd "C:\Program Files\Octopus Deploy\Tentacle"
+      .\Tentacle.exe show-thumbprint --instance "Tentacle" --nologo
+  register: tentacle_thumbprint
+
+# Now setup Octopus Deploy Tentacle as our service user account
+- name: Upload the NTrights for the Scheduled Task
+  win_copy:
+      src: files/ntrights.exe
+      dest: "C:\\scripts\\ntrights.exe"
+      # force: true
+
+- name: Add user as a logon as a service right
+  win_command: "C:\\scripts\\ntrights.exe +r SeServiceLogonRight -u {{ octopus_deploy_service_account }}"
+  when: octopus_deploy_service_account | length > 0
+
+- name: Setup Tentacle to run as the octopus_deploy_service_account
+  win_service:
+      name: "OctopusDeploy Tentacle"
+      start_mode: delayed
+      username: "{{ octopus_deploy_service_account }}"
+      password: "{{ octopus_deploy_service_account_password }}"
+      state: restarted
+  when: octopus_deploy_service_account | length > 0
+
+- name: Ensure the service is started
+  win_service:
+    name: "OctopusDeploy Tentacle"
+    state: started
+
+- name: Test we can get the Octopus Tentacle thumbprint without error. If so, success!
+  win_shell: |
+      cd "C:\Program Files\Octopus Deploy\Tentacle"
+      .\Tentacle.exe show-thumbprint --instance "Tentacle" --nologo
+  register: tentacle_thumbprint

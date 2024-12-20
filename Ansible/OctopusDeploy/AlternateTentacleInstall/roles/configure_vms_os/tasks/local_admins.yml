@@ -1,0 +1,17 @@
+  # =============================================================================
+  # Add local admins
+  - name: Add Local Admins
+    win_group_membership:
+      name: Administrators
+      members: "{{ item }}"
+    with_items: "{{ local_admins }}"
+    when: local_admins | length>0
+
+  - name: Add Octopus Deploy Service Account as Local Admin
+    win_group_membership:
+      name: Administrators
+      members: "{{ item }}"
+    with_items: "{{ local_admins }}"
+    when: octopus_deploy_service_account | length>0
+
+    

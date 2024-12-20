@@ -1,0 +1,8 @@
+# Ocrtopus Deploy
+tentacle_service_port: 10933
+octopus_deploy_service_account: "builduser"
+octopus_server_certificate_thumbprint: "thumbprinthere"
+octopus_server_http_or_https: "http"
+octopus_server_api_key: "API-yourkeyhere"
+octopus_server_fqdn: "octopus.fqdn"
+octopus_space_id: "Spaces-1"
