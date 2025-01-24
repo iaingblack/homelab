@@ -66,7 +66,7 @@ class CountdownState:
         return max(0, current_balance)  # clamp at 0 if negative
 
 # Create the global countdown state
-countdown_state = CountdownState(initial_balance=2_000_000, daily_outflow=1500)
+countdown_state = CountdownState(initial_balance=2_173_110, daily_outflow=1500)
 
 # -------------------------------
 # 3) JSON Endpoint
@@ -103,58 +103,79 @@ def get_countdown():
     }
 
 # -------------------------------
-# 4) Simple HTML Page (Root)
+# 4) Auto-Updating HTML Page (Root)
 # -------------------------------
 
 @app.get("/", response_class=HTMLResponse)
 def show_countdown_html():
     """
-    Displays a simple HTML page showing the current
-    BTC balance and approximate time remaining.
+    Displays a simple HTML page that auto-updates every second.
+    It fetches JSON from /countdown and updates the DOM.
     """
-    current_balance = countdown_state.get_current_balance()
+    # The HTML includes a script that calls fetch("/countdown") every second.
+    # The JSON response is used to update the page dynamically.
     
-    # Handle no outflow case
-    if countdown_state.daily_outflow <= 0:
-        return """
-        <html>
-        <head><title>BTC Countdown</title></head>
-        <body>
-            <h1>Countdown Not Applicable</h1>
-            <p>No net outflow detected.</p>
-        </body>
-        </html>
-        """
-    
-    days_left = current_balance / countdown_state.daily_outflow
-    (yrs, mons, dys, hrs, mins, secs) = approximate_time_breakdown(days_left)
-    
-    # Build a simple HTML string
-    html_content = f"""
+    html_content = """
     <html>
     <head>
         <title>BTC Countdown</title>
+        <meta charset="UTF-8">
     </head>
     <body>
         <h1>BTC Countdown</h1>
-        <p><strong>Balance Remaining:</strong> {current_balance:,.4f} BTC</p>
+        
+        <p><strong>Balance Remaining:</strong> <span id="balance">Loading...</span> BTC</p>
+        
         <p><strong>Approx Time Until 0:</strong></p>
         <ul>
-            <li><strong>Years:</strong> {yrs}</li>
-            <li><strong>Months:</strong> {mons}</li>
-            <li><strong>Days:</strong> {dys}</li>
-            <li><strong>Hours:</strong> {hrs}</li>
-            <li><strong>Minutes:</strong> {mins}</li>
-            <li><strong>Seconds:</strong> {secs}</li>
+            <li><strong>Years:</strong> <span id="years"></span></li>
+            <li><strong>Months:</strong> <span id="months"></span></li>
+            <li><strong>Days:</strong> <span id="days"></span></li>
+            <li><strong>Hours:</strong> <span id="hours"></span></li>
+            <li><strong>Minutes:</strong> <span id="minutes"></span></li>
+            <li><strong>Seconds:</strong> <span id="seconds"></span></li>
         </ul>
-        <p><em>Refresh this page to see updates.</em></p>
         
-        <hr>
-        <p>
-        Check the JSON endpoint at <a href="/countdown">/countdown</a>
-        for structured data.
-        </p>
+        <p><em>The page updates automatically every second.</em></p>
+        
+        <script>
+            function fetchCountdown() {
+                fetch('/countdown')
+                    .then(response => response.json())
+                    .then(data => {
+                        // If there's no net outflow, we display a special message
+                        if (typeof data.time_left === 'string') {
+                            // "No net outflow" scenario
+                            document.getElementById('balance').textContent = data.balance.toFixed(4);
+                            document.getElementById('years').textContent = '-';
+                            document.getElementById('months').textContent = '-';
+                            document.getElementById('days').textContent = '-';
+                            document.getElementById('hours').textContent = '-';
+                            document.getElementById('minutes').textContent = '-';
+                            document.getElementById('seconds').textContent = '-';
+                        } else {
+                            // Normal countdown scenario
+                            document.getElementById('balance').textContent = data.balance.toFixed(4);
+                            document.getElementById('years').textContent = data.time_left.years;
+                            document.getElementById('months').textContent = data.time_left.months;
+                            document.getElementById('days').textContent = data.time_left.days;
+                            document.getElementById('hours').textContent = data.time_left.hours;
+                            document.getElementById('minutes').textContent = data.time_left.minutes;
+                            document.getElementById('seconds').textContent = data.time_left.seconds;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching countdown:', error);
+                    });
+            }
+            
+            // Call fetchCountdown() every second
+            setInterval(fetchCountdown, 1000);
+            // Also fetch immediately on page load
+            fetchCountdown();
+        </script>
     </body>
     </html>
     """
+    
     return html_content
