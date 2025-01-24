@@ -28,3 +28,9 @@ LAST MONTH
 
 LAST WEEK
 2183000 - 2174000 = 9000 = 1285 per day
+
+
+Docker
+
+docker build -t exchangeliquiditycountdow:latest ./Project/ExchangeLiquidityCountdown
+docker run -p 80:80 exchangeliquiditycountdow:latest
