@@ -1,0 +1,11 @@
+[project]
+name = "exchangeliquiditycountdown"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115.7",
+    "requests>=2.32.3",
+    "uvicorn>=0.34.0",
+]
