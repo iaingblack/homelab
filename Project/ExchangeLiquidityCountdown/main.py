@@ -12,7 +12,7 @@ def approximate_time_breakdown(total_days: float):
     """
     Given a number of days (float), return the approximate time as:
     (years, months, days, hours, minutes, seconds).
-    
+
     Using:
       - 1 year = 365 days (approx)
       - 1 month = 30 days (approx)
@@ -59,30 +59,37 @@ class CountdownState:
         based on how many seconds have elapsed since start_time.
         """
         elapsed_seconds = time.time() - self.start_time
-        btc_per_second = self.baseline_outflow / 86400  # daily_outflow / 86400
+        btc_per_second = self.baseline_outflow / 86400  # daily_outflow / 86,400
         outflow_so_far = btc_per_second * elapsed_seconds
         current_balance = self.initial_balance - outflow_so_far
         return max(0, current_balance)
 
-# Create a global countdown state
+# --------------------------------------------------------------------------
+# 3) Global Countdown State
+#    - You requested an initial BTC balance of 2,174,000.
+#    - We'll keep a baseline outflow of 1,500 BTC/day for the "real-time" drain.
+# --------------------------------------------------------------------------
+
 countdown_state = CountdownState(
-    initial_balance=2_000_000,  # Example
-    baseline_outflow=1500       # Example
+    initial_balance=2_174_000,  # 2,174,000 BTC
+    baseline_outflow=1500       # Example baseline outflow
 )
 
 # --------------------------------------------------------------------------
-# 3) Multiple Outflow Scenarios (Fake Data)
+# 4) Multiple Outflow Scenarios (Fake Data)
+#    As per your request:
 # --------------------------------------------------------------------------
+
 multiple_outflows = {
     "Last Day": 1200,
-    "Last Week": 1400,
-    "Last Month": 1600,
-    "Last 3 Months": 1800,
-    "Last Year": 2000
+    "Last Week": 1285,
+    "Last Month": 3000,
+    "Last 3 Months": 2802,
+    "Last Year": 1493
 }
 
 # --------------------------------------------------------------------------
-# 4) JSON Endpoint (/countdown)
+# 5) JSON Endpoint (/countdown)
 # --------------------------------------------------------------------------
 
 @app.get("/countdown")
@@ -113,7 +120,7 @@ def get_countdown():
                     "minutes": mins,
                     "seconds": secs
                 },
-                "days_left": days_left  # for a chart if needed
+                "days_left": days_left  # for chart plotting
             }
         else:
             scenario_data = {
@@ -131,25 +138,27 @@ def get_countdown():
     }
 
 # --------------------------------------------------------------------------
-# 5) Auto-Updating HTML Page (Root "/") with Chart.js
+# 6) HTML Page (Root "/") 
+#    - Renders the chart only ONCE on page load
+#    - The table data updates every second, but NOT the chart
 # --------------------------------------------------------------------------
 
 @app.get("/", response_class=HTMLResponse)
 def show_countdown_html():
     """
     Displays an HTML page that:
-      - Renders the chart once on page load
-      - Updates the table data every second (but NOT the chart)
+      - Builds the chart once on page load (X-axis in years, single decimal)
+      - Continues to update only the table every second (NOT the chart).
     """
     html_content = """
     <html>
     <head>
-        <title>BTC Countdown with Chart (One-Time)</title>
+        <title>BTC Countdown - Chart One-Time, Table Updates</title>
         <meta charset="UTF-8">
         <style>
-          body { font-family: Arial, sans-serif; margin: 20px; }
+          body { font-family: Arial, sans-serif; margin: 20px; background-color: lightgray; }
           table { border-collapse: collapse; margin-top: 10px; }
-          th, td { border: 1px solid #ccc; padding: 8px; }
+          th, td { border: 1px solid #000; padding: 8px; }
           th { background-color: #f9f9f9; }
           #chartContainer { margin-top: 40px; width: 800px; }
           #forecastChart { width: 100%; height: 400px; }
@@ -158,7 +167,7 @@ def show_countdown_html():
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     </head>
     <body>
-        <h1>BTC Countdown (Chart on Page Load, Table Updates Live)</h1>
+        <h1>BTC Countdown (Chart Once, Table Auto-Updates)</h1>
         
         <div>
             <p><strong>Real-Time Balance (baseline rate):</strong> 
@@ -170,7 +179,6 @@ def show_countdown_html():
         <hr>
         
         <h2>Hypothetical Outflow Scenarios</h2>
-        <!-- Table: from Years -> Months -> Days -> Hours -> Minutes -> Seconds -->
         <table>
           <thead>
             <tr>
@@ -184,7 +192,9 @@ def show_countdown_html():
               <th>Seconds</th>
             </tr>
           </thead>
-          <tbody id="scenarioTableBody"></tbody>
+          <tbody id="scenarioTableBody">
+            <!-- We'll dynamically fill this with JS -->
+          </tbody>
         </table>
         
         <div id="chartContainer">
@@ -192,34 +202,31 @@ def show_countdown_html():
         </div>
         
         <p>
-          <em>The table updates every second (via JavaScript), 
-              but the chart is drawn only once on page load.</em>
+          <em>The chart is rendered once at page load (snapshot). 
+              The table refreshes every second, but the chart does not change.</em>
         </p>
         
         <script>
-            let forecastChart = null;  // We'll store the Chart.js instance here.
-            
-            // ----------------------------
-            // 1) Build Chart: Called once
-            // ----------------------------
-            function buildChart(data) {
-                // data.scenarios is an array of scenario objects
-                // data.current_balance is the real-time balance
-                // We'll do a one-time snapshot from the time the page loads.
+            let forecastChart = null;
+
+            // ----------------------------------------------------------------
+            // 1) Build the chart ONLY ONCE using the data at page load
+            // ----------------------------------------------------------------
+            function buildChart(snapshotData) {
+                // We convert the scenario's days_left to years, then produce 
+                // points for x-values in 0.1-year increments, up to the max.
                 
-                // Find the largest days_left among scenarios
+                // Find maxDays among scenarios
                 let maxDays = 0;
-                data.scenarios.forEach(scenario => {
-                    if (scenario.days_left > maxDays) {
-                        maxDays = scenario.days_left;
+                snapshotData.scenarios.forEach(s => {
+                    if (s.days_left > maxDays) {
+                        maxDays = s.days_left;
                     }
                 });
-                maxDays = Math.floor(maxDays);
+                const maxYears = maxDays / 365;  // days -> years
+                const step = 0.1;                // step for x-axis (in years)
                 
-                // Prepare datasets for Chart.js
-                const scenarioDatasets = [];
-                
-                // We'll also pick some colors for the lines.
+                // Prepare color palette
                 const colors = [
                     "rgb(255, 99, 132)",
                     "rgb(54, 162, 235)",
@@ -228,22 +235,30 @@ def show_countdown_html():
                     "rgb(153, 102, 255)",
                     "rgb(255, 159, 64)"
                 ];
-                
                 let colorIndex = 0;
+
+                // Build scenario datasets
+                const scenarioDatasets = [];
                 
-                data.scenarios.forEach(scenario => {
+                snapshotData.scenarios.forEach(scenario => {
                     if (scenario.daily_outflow > 0) {
                         const scenarioColor = colors[colorIndex % colors.length];
                         colorIndex++;
                         
                         const points = [];
-                        for (let day = 0; day <= maxDays; day++) {
-                            const btcLeft = data.current_balance - scenario.daily_outflow * day;
-                            points.push(Math.max(0, btcLeft));
+                        // For x in 0.0 to maxYears in increments of 0.1
+                        const stepsCount = Math.floor(maxYears / step);
+                        for (let i = 0; i <= stepsCount; i++) {
+                            const yearVal = i * step;
+                            const daysVal = yearVal * 365;
+                            let btcLeft = snapshotData.current_balance 
+                                          - scenario.daily_outflow * daysVal;
+                            if (btcLeft < 0) btcLeft = 0;
+                            points.push(btcLeft);
                         }
                         
                         scenarioDatasets.push({
-                            label: scenario.label + " (" + scenario.daily_outflow + " BTC/day)",
+                            label: scenario.label + ` (${scenario.daily_outflow} BTC/day)`,
                             data: points,
                             borderColor: scenarioColor,
                             backgroundColor: scenarioColor,
@@ -252,18 +267,20 @@ def show_countdown_html():
                         });
                     }
                 });
-                
-                // X-axis labels: "Day 0", "Day 1", ... up to maxDays
-                const labels = [];
-                for (let day = 0; day <= maxDays; day++) {
-                    labels.push(day.toString());
+
+                // Build X-axis labels in years, one decimal place
+                const xLabels = [];
+                const stepsCount = Math.floor(maxYears / step);
+                for (let i = 0; i <= stepsCount; i++) {
+                    const yearVal = (i * step).toFixed(1);  // e.g. "0.0", "0.1", ...
+                    xLabels.push(yearVal);
                 }
-                
+
                 const ctx = document.getElementById('forecastChart').getContext('2d');
                 forecastChart = new Chart(ctx, {
                     type: 'line',
                     data: {
-                        labels: labels,
+                        labels: xLabels,
                         datasets: scenarioDatasets
                     },
                     options: {
@@ -273,7 +290,7 @@ def show_countdown_html():
                             x: {
                                 title: {
                                     display: true,
-                                    text: 'Days from Now (Snapshot)'
+                                    text: 'Years from Now (Snapshot)'
                                 }
                             },
                             y: {
@@ -293,10 +310,10 @@ def show_countdown_html():
                     }
                 });
             }
-            
-            // ------------------------------------------------
-            // 2) Update Table Data (Called every second)
-            // ------------------------------------------------
+
+            // ----------------------------------------------------------------
+            // 2) Update the TABLE every second (NOT the chart)
+            // ----------------------------------------------------------------
             function updateTableData() {
                 fetch('/countdown')
                     .then(response => response.json())
@@ -325,8 +342,7 @@ def show_countdown_html():
                             row.appendChild(cellOutflow);
                             
                             if (typeof scenario.time_left === 'string') {
-                                // If scenario says "Outflow <= 0; not applicable."
-                                // fill the rest with '-'
+                                // e.g. "Outflow <= 0; not applicable."
                                 for (let i = 0; i < 6; i++) {
                                     const cell = document.createElement('td');
                                     cell.textContent = '-';
@@ -371,21 +387,20 @@ def show_countdown_html():
                         console.error('Error fetching countdown data:', error);
                     });
             }
-            
-            // ----------------------------------------
-            // 3) On Page Load: Build Chart ONCE
-            // ----------------------------------------
-            // We'll do one fetch to get the initial data
-            // for the chart. Then, we'll never update it.
+
+            // ----------------------------------------------------------------
+            // 3) On Page Load: 
+            //    a) Fetch data to build the chart once
+            //    b) Start the table updates every second
+            // ----------------------------------------------------------------
             fetch('/countdown')
                 .then(response => response.json())
                 .then(data => {
-                    // Build the chart using the data at page load
+                    // Build the chart one time
                     buildChart(data);
-                    
-                    // Then start updating the table every second
-                    updateTableData(); // do once immediately
-                    setInterval(updateTableData, 1000);
+                    // Then start table updates
+                    updateTableData(); // do one update now
+                    setInterval(updateTableData, 1000); // update table every second
                 })
                 .catch(error => {
                     console.error('Error fetching countdown data (initial):', error);
@@ -394,5 +409,5 @@ def show_countdown_html():
     </body>
     </html>
     """
-    
+
     return html_content
