@@ -11,3 +11,20 @@ uv run uvicorn exchangeliquiditycountdown:app --reload
 curl http://127.0.0.1:8000/stock/mstr
 
 export POLYGON_API_KEY=jhlkhlkljlkj
+
+
+Some basic calculation values
+
+https://www.coinglass.com/Balance
+
+1 YEAR
+2719000 - 2174000 = 545000 = 1493 per day
+
+3 MONTHS
+2429000 - 2174000 = 266933 = 2802 per day
+
+LAST MONTH
+2264000 - 2174000 = 89587 =  3000 per day
+
+LAST WEEK
+2183000 - 2174000 = 9000 = 1285 per day

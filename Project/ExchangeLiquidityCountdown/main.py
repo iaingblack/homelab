@@ -47,10 +47,6 @@ class CountdownState:
       - initial_balance (BTC on exchanges at server start)
       - baseline_outflow (BTC net outflow per day, used for real-time countdown)
       - start_time (when the countdown began)
-    
-    The get_current_balance() method calculates how much BTC
-    should remain right now, based on how many seconds have elapsed
-    and the baseline_outflow rate.
     """
     def __init__(self, initial_balance: float, baseline_outflow: float):
         self.initial_balance = initial_balance
@@ -70,22 +66,21 @@ class CountdownState:
         return max(0, current_balance)  # clamp at 0 if negative
 
 # Create a global countdown state:
-# - We'll pretend there's 2,000,000 BTC on exchanges
-# - Draining at 1,500 BTC/day in real time
-countdown_state = CountdownState(initial_balance=2_000_000, baseline_outflow=1500)
+countdown_state = CountdownState(
+    initial_balance=2174000,  # Fake starting balance
+    baseline_outflow=1500       # Draining at 1,500 BTC/day
+)
 
 # --------------------------------------------------------------------------
-# 3) Multiple Hypothetical Scenarios
+# 3) Multiple Hypothetical Scenarios (Fake Data)
 # --------------------------------------------------------------------------
-# Suppose we track hypothetical daily outflow rates derived from:
-# "Last day", "Last week", "Last month", "Last 3 months", "Last year"
-# (Fake values for demonstration)
+# Example outflow rates for different time windows:
 multiple_outflows = {
     "Last Day": 1200,      # e.g., 1,200 BTC/day
-    "Last Week": 1400,     # e.g., 1,400 BTC/day
-    "Last Month": 1600,    # e.g., 1,600 BTC/day
-    "Last 3 Months": 1800, # e.g., 1,800 BTC/day
-    "Last Year": 2000      # e.g., 2,000 BTC/day
+    "Last Week": 1285,     # e.g., 1,400 BTC/day
+    "Last Month": 3000,    # e.g., 1,600 BTC/day
+    "Last 3 Months": 2802, # e.g., 1,800 BTC/day
+    "Last Year": 1493      # e.g., 2,000 BTC/day
 }
 
 # --------------------------------------------------------------------------
@@ -96,16 +91,16 @@ multiple_outflows = {
 def get_countdown():
     """
     Returns a JSON object with:
-      - The "real-time" current balance (draining at the baseline_outflow).
-      - A set of hypothetical scenarios (each with a different outflow),
-        showing how long it would take to reach 0 from the *current* balance.
+      - The 'real-time' current balance (draining at baseline_outflow)
+      - A list of hypothetical scenarios, each with:
+         - A label (e.g. "Last Day")
+         - The scenario's daily outflow
+         - The approximate time (Y, M, D, H, M, S) until zero 
+           if that scenario's outflow started now.
     """
     current_balance = countdown_state.get_current_balance()
-
-    # If baseline_outflow is 0 or negative, the real-time countdown won't go down.
-    # We can still do hypothetical scenarios, though.
     
-    # Prepare the result for each scenario
+    # Build scenario data
     scenarios_result = []
     for label, outflow_value in multiple_outflows.items():
         if outflow_value > 0:
@@ -127,7 +122,7 @@ def get_countdown():
             scenario_data = {
                 "label": label,
                 "daily_outflow": outflow_value,
-                "time_left": "Outflow is zero or negative; not applicable."
+                "time_left": "Outflow <= 0; not applicable."
             }
         scenarios_result.append(scenario_data)
     
@@ -145,15 +140,12 @@ def get_countdown():
 def show_countdown_html():
     """
     Displays a simple HTML page that auto-updates every second.
-    It fetches JSON from /countdown and updates the DOM with multiple scenarios.
+    The time columns are now ordered from largest (Years) to smallest (Seconds).
     """
-    # We'll create a table for the scenario outflows and their times to zero.
-    # The JavaScript will update each row with fresh data from /countdown once per second.
-    
     html_content = """
     <html>
     <head>
-        <title>BTC Countdown - Multiple Scenarios</title>
+        <title>BTC Countdown - Multiple Scenarios (Reversed Columns)</title>
         <meta charset="UTF-8">
         <style>
           body { font-family: Arial, sans-serif; margin: 20px; }
@@ -175,6 +167,7 @@ def show_countdown_html():
         <hr>
         
         <h2>Hypothetical Outflow Scenarios</h2>
+        <!-- NOTE: We list columns from Years down to Seconds (largest -> smallest) -->
         <table>
           <thead>
             <tr>
@@ -189,7 +182,7 @@ def show_countdown_html():
             </tr>
           </thead>
           <tbody id="scenarioTableBody">
-            <!-- We'll dynamically populate this with JS -->
+            <!-- We'll dynamically fill this with JS -->
           </tbody>
         </table>
         
@@ -222,8 +215,8 @@ def show_countdown_html():
                             row.appendChild(cellOutflow);
                             
                             if (typeof scenario.time_left === 'string') {
-                                // If the scenario says "Outflow is zero or negative; not applicable."
-                                // Just fill the rest of the cells with '-'
+                                // If scenario says "Outflow <= 0; not applicable."
+                                // then fill the rest with '-'
                                 for (let i = 0; i < 6; i++) {
                                     const cell = document.createElement('td');
                                     cell.textContent = '-';
