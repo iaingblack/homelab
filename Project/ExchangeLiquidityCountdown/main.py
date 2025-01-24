@@ -4,9 +4,9 @@ import time
 
 app = FastAPI()
 
-# -------------------------------
+# --------------------------------------------------------------------------
 # 1) Helper Functions
-# -------------------------------
+# --------------------------------------------------------------------------
 
 def approximate_time_breakdown(total_days: float):
     """
@@ -37,142 +37,243 @@ def approximate_time_breakdown(total_days: float):
     
     return (years, months, days, hours, minutes, seconds)
 
-# -------------------------------
-# 2) Countdown State
-# -------------------------------
+# --------------------------------------------------------------------------
+# 2) Countdown State (Single Real-Time Balance)
+# --------------------------------------------------------------------------
 
 class CountdownState:
     """
     Stores:
       - initial_balance (BTC on exchanges at server start)
-      - daily_outflow (BTC net outflow per day)
+      - baseline_outflow (BTC net outflow per day, used for real-time countdown)
       - start_time (when the countdown began)
+    
+    The get_current_balance() method calculates how much BTC
+    should remain right now, based on how many seconds have elapsed
+    and the baseline_outflow rate.
     """
-    def __init__(self, initial_balance: float, daily_outflow: float):
+    def __init__(self, initial_balance: float, baseline_outflow: float):
         self.initial_balance = initial_balance
-        self.daily_outflow = daily_outflow
+        self.baseline_outflow = baseline_outflow
         self.start_time = time.time()  # capture the moment we start
 
     def get_current_balance(self) -> float:
         """
         Computes how much BTC should be left right now, based on
         how many seconds have elapsed since start_time, at a constant
-        daily_outflow rate.
+        baseline_outflow rate.
         """
         elapsed_seconds = time.time() - self.start_time
-        btc_per_second = self.daily_outflow / 86400  # daily_outflow / 86,400
+        btc_per_second = self.baseline_outflow / 86400  # daily_outflow / 86,400
         outflow_so_far = btc_per_second * elapsed_seconds
         current_balance = self.initial_balance - outflow_so_far
         return max(0, current_balance)  # clamp at 0 if negative
 
-# Create the global countdown state
-countdown_state = CountdownState(initial_balance=2_173_110, daily_outflow=1500)
+# Create a global countdown state:
+# - We'll pretend there's 2,000,000 BTC on exchanges
+# - Draining at 1,500 BTC/day in real time
+countdown_state = CountdownState(initial_balance=2_000_000, baseline_outflow=1500)
 
-# -------------------------------
-# 3) JSON Endpoint
-# -------------------------------
+# --------------------------------------------------------------------------
+# 3) Multiple Hypothetical Scenarios
+# --------------------------------------------------------------------------
+# Suppose we track hypothetical daily outflow rates derived from:
+# "Last day", "Last week", "Last month", "Last 3 months", "Last year"
+# (Fake values for demonstration)
+multiple_outflows = {
+    "Last Day": 1200,      # e.g., 1,200 BTC/day
+    "Last Week": 1400,     # e.g., 1,400 BTC/day
+    "Last Month": 1600,    # e.g., 1,600 BTC/day
+    "Last 3 Months": 1800, # e.g., 1,800 BTC/day
+    "Last Year": 2000      # e.g., 2,000 BTC/day
+}
+
+# --------------------------------------------------------------------------
+# 4) JSON Endpoint (/countdown)
+# --------------------------------------------------------------------------
 
 @app.get("/countdown")
 def get_countdown():
     """
     Returns a JSON object with:
-      - current theoretical BTC balance
-      - approximate time until zero (Y, M, D, H, M, S)
+      - The "real-time" current balance (draining at the baseline_outflow).
+      - A set of hypothetical scenarios (each with a different outflow),
+        showing how long it would take to reach 0 from the *current* balance.
     """
     current_balance = countdown_state.get_current_balance()
+
+    # If baseline_outflow is 0 or negative, the real-time countdown won't go down.
+    # We can still do hypothetical scenarios, though.
     
-    if countdown_state.daily_outflow <= 0:
-        return {
-            "balance": current_balance,
-            "time_left": "No net outflow; countdown not applicable."
-        }
-    
-    days_left = current_balance / countdown_state.daily_outflow
-    (yrs, mons, dys, hrs, mins, secs) = approximate_time_breakdown(days_left)
+    # Prepare the result for each scenario
+    scenarios_result = []
+    for label, outflow_value in multiple_outflows.items():
+        if outflow_value > 0:
+            days_left = current_balance / outflow_value
+            (yrs, mons, dys, hrs, mins, secs) = approximate_time_breakdown(days_left)
+            scenario_data = {
+                "label": label,
+                "daily_outflow": outflow_value,
+                "time_left": {
+                    "years": yrs,
+                    "months": mons,
+                    "days": dys,
+                    "hours": hrs,
+                    "minutes": mins,
+                    "seconds": secs
+                }
+            }
+        else:
+            scenario_data = {
+                "label": label,
+                "daily_outflow": outflow_value,
+                "time_left": "Outflow is zero or negative; not applicable."
+            }
+        scenarios_result.append(scenario_data)
     
     return {
-        "balance": current_balance,
-        "time_left": {
-            "years": yrs,
-            "months": mons,
-            "days": dys,
-            "hours": hrs,
-            "minutes": mins,
-            "seconds": secs
-        }
+        "current_balance": current_balance,
+        "baseline_outflow": countdown_state.baseline_outflow,
+        "scenarios": scenarios_result
     }
 
-# -------------------------------
-# 4) Auto-Updating HTML Page (Root)
-# -------------------------------
+# --------------------------------------------------------------------------
+# 5) Auto-Updating HTML Page (Root "/")
+# --------------------------------------------------------------------------
 
 @app.get("/", response_class=HTMLResponse)
 def show_countdown_html():
     """
     Displays a simple HTML page that auto-updates every second.
-    It fetches JSON from /countdown and updates the DOM.
+    It fetches JSON from /countdown and updates the DOM with multiple scenarios.
     """
-    # The HTML includes a script that calls fetch("/countdown") every second.
-    # The JSON response is used to update the page dynamically.
+    # We'll create a table for the scenario outflows and their times to zero.
+    # The JavaScript will update each row with fresh data from /countdown once per second.
     
     html_content = """
     <html>
     <head>
-        <title>BTC Countdown</title>
+        <title>BTC Countdown - Multiple Scenarios</title>
         <meta charset="UTF-8">
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          table { border-collapse: collapse; margin-top: 10px; }
+          th, td { border: 1px solid #ccc; padding: 8px; }
+          th { background-color: #f9f9f9; }
+        </style>
     </head>
     <body>
-        <h1>BTC Countdown</h1>
+        <h1>BTC Countdown (Multiple Outflow Scenarios)</h1>
         
-        <p><strong>Balance Remaining:</strong> <span id="balance">Loading...</span> BTC</p>
+        <div>
+            <p><strong>Real-Time Balance (draining at baseline rate):</strong> 
+               <span id="currentBalance">Loading...</span> BTC</p>
+            <p><strong>Baseline Daily Outflow:</strong> 
+               <span id="baselineOutflow">Loading...</span> BTC/day</p>
+        </div>
         
-        <p><strong>Approx Time Until 0:</strong></p>
-        <ul>
-            <li><strong>Years:</strong> <span id="years"></span></li>
-            <li><strong>Months:</strong> <span id="months"></span></li>
-            <li><strong>Days:</strong> <span id="days"></span></li>
-            <li><strong>Hours:</strong> <span id="hours"></span></li>
-            <li><strong>Minutes:</strong> <span id="minutes"></span></li>
-            <li><strong>Seconds:</strong> <span id="seconds"></span></li>
-        </ul>
+        <hr>
         
-        <p><em>The page updates automatically every second.</em></p>
+        <h2>Hypothetical Outflow Scenarios</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Scenario</th>
+              <th>Outflow (BTC/day)</th>
+              <th>Years</th>
+              <th>Months</th>
+              <th>Days</th>
+              <th>Hours</th>
+              <th>Minutes</th>
+              <th>Seconds</th>
+            </tr>
+          </thead>
+          <tbody id="scenarioTableBody">
+            <!-- We'll dynamically populate this with JS -->
+          </tbody>
+        </table>
+        
+        <p><em>The page updates automatically every second (via JavaScript).</em></p>
         
         <script>
-            function fetchCountdown() {
+            function updateCountdown() {
                 fetch('/countdown')
                     .then(response => response.json())
                     .then(data => {
-                        // If there's no net outflow, we display a special message
-                        if (typeof data.time_left === 'string') {
-                            // "No net outflow" scenario
-                            document.getElementById('balance').textContent = data.balance.toFixed(4);
-                            document.getElementById('years').textContent = '-';
-                            document.getElementById('months').textContent = '-';
-                            document.getElementById('days').textContent = '-';
-                            document.getElementById('hours').textContent = '-';
-                            document.getElementById('minutes').textContent = '-';
-                            document.getElementById('seconds').textContent = '-';
-                        } else {
-                            // Normal countdown scenario
-                            document.getElementById('balance').textContent = data.balance.toFixed(4);
-                            document.getElementById('years').textContent = data.time_left.years;
-                            document.getElementById('months').textContent = data.time_left.months;
-                            document.getElementById('days').textContent = data.time_left.days;
-                            document.getElementById('hours').textContent = data.time_left.hours;
-                            document.getElementById('minutes').textContent = data.time_left.minutes;
-                            document.getElementById('seconds').textContent = data.time_left.seconds;
-                        }
+                        // 1) Update the real-time balance and baseline outflow
+                        document.getElementById('currentBalance').textContent = data.current_balance.toFixed(4);
+                        document.getElementById('baselineOutflow').textContent = data.baseline_outflow.toFixed(2);
+                        
+                        // 2) Clear and rebuild the scenario table body
+                        const tbody = document.getElementById('scenarioTableBody');
+                        tbody.innerHTML = ''; // clear old rows
+                        
+                        data.scenarios.forEach((scenario) => {
+                            const row = document.createElement('tr');
+                            
+                            // Scenario label
+                            const cellLabel = document.createElement('td');
+                            cellLabel.textContent = scenario.label;
+                            row.appendChild(cellLabel);
+                            
+                            // Outflow
+                            const cellOutflow = document.createElement('td');
+                            cellOutflow.textContent = scenario.daily_outflow.toFixed(2);
+                            row.appendChild(cellOutflow);
+                            
+                            if (typeof scenario.time_left === 'string') {
+                                // If the scenario says "Outflow is zero or negative; not applicable."
+                                // Just fill the rest of the cells with '-'
+                                for (let i = 0; i < 6; i++) {
+                                    const cell = document.createElement('td');
+                                    cell.textContent = '-';
+                                    row.appendChild(cell);
+                                }
+                            } else {
+                                // Years
+                                const cellYears = document.createElement('td');
+                                cellYears.textContent = scenario.time_left.years;
+                                row.appendChild(cellYears);
+                                
+                                // Months
+                                const cellMonths = document.createElement('td');
+                                cellMonths.textContent = scenario.time_left.months;
+                                row.appendChild(cellMonths);
+                                
+                                // Days
+                                const cellDays = document.createElement('td');
+                                cellDays.textContent = scenario.time_left.days;
+                                row.appendChild(cellDays);
+                                
+                                // Hours
+                                const cellHours = document.createElement('td');
+                                cellHours.textContent = scenario.time_left.hours;
+                                row.appendChild(cellHours);
+                                
+                                // Minutes
+                                const cellMinutes = document.createElement('td');
+                                cellMinutes.textContent = scenario.time_left.minutes;
+                                row.appendChild(cellMinutes);
+                                
+                                // Seconds
+                                const cellSeconds = document.createElement('td');
+                                cellSeconds.textContent = scenario.time_left.seconds;
+                                row.appendChild(cellSeconds);
+                            }
+                            
+                            tbody.appendChild(row);
+                        });
+                        
                     })
                     .catch(error => {
-                        console.error('Error fetching countdown:', error);
+                        console.error('Error fetching countdown data:', error);
                     });
             }
             
-            // Call fetchCountdown() every second
-            setInterval(fetchCountdown, 1000);
-            // Also fetch immediately on page load
-            fetchCountdown();
+            // Fetch new data every second
+            setInterval(updateCountdown, 1000);
+            // Fetch immediately on page load
+            updateCountdown();
         </script>
     </body>
     </html>
