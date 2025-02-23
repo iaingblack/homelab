@@ -7,8 +7,8 @@ services:
     volumes:
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
     ports:
-      - "4317:4317"  # OTLP gRPC receiver for the app
-      - "8889:8889"  # Metrics endpoint for Prometheus
+      - "4317:4317"
+      - "8889:8889"
     networks:
       - telemetry-net
     depends_on:
@@ -20,9 +20,8 @@ services:
     environment:
       - COLLECTOR_OTLP_ENABLED=true
     ports:
-      - "16686:16686"  # Web UI
-      - "14250:14250"  # Jaeger native gRPC (optional)
-      # Removed "4317:4317" - Jaeger’s OTLP port is internal
+      - "16686:16686"
+      - "14250:14250"
     networks:
       - telemetry-net
 
@@ -51,6 +50,8 @@ services:
     environment:
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+    volumes:
+      - ./datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml  # Mount the provisioning file
     networks:
       - telemetry-net
     depends_on:
