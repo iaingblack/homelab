@@ -1,0 +1,63 @@
+version: "3.8"
+
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4317:4317"  # OTLP gRPC receiver for the app
+      - "8889:8889"  # Metrics endpoint for Prometheus
+    networks:
+      - telemetry-net
+    depends_on:
+      - jaeger
+      - loki
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - "16686:16686"  # Web UI
+      - "14250:14250"  # Jaeger native gRPC (optional)
+      # Removed "4317:4317" - Jaeger’s OTLP port is internal
+    networks:
+      - telemetry-net
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - telemetry-net
+    depends_on:
+      - otel-collector
+
+  loki:
+    image: grafana/loki:latest
+    ports:
+      - "3100:3100"
+    networks:
+      - telemetry-net
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+    networks:
+      - telemetry-net
+    depends_on:
+      - prometheus
+      - loki
+      - jaeger
+
+networks:
+  telemetry-net:
+    driver: bridge
