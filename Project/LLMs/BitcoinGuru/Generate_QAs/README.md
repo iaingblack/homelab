@@ -24,3 +24,6 @@ chmod +x ./venv/bin/activate
 . ./venv/bin/activate
 pip install -r requirements.txt
 ```
+
+
+Conversion of Bitcoin for Dummies PDF book took 6 minutes 30 seconds on my M1 MAX.
