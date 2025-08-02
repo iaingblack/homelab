@@ -1,0 +1,14 @@
+- name: Create test file for users setup
+  copy:
+    content: "User setup completed at {{ ansible_date_time.iso8601 }}"
+    dest: "/tmp/ansible_users_success.txt"
+    mode: '0644'
+
+- name: Output the success message
+  command: cat /tmp/ansible_users_success.txt
+  register: cat_output
+
+- name: Show the output
+  debug:
+    msg: "{{ cat_output.stdout }}"
+    

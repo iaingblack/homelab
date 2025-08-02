@@ -11,3 +11,5 @@ key.ppk
 Ansible/k8s/github-actions-runner/ib_ssh
 **/venv/*
 **/*.pyc
+.DS_Store
+

@@ -1,0 +1,24 @@
+---
+- name: Configure system
+  hosts: localhost
+  become: true
+  vars:
+    passthrough: "{{ var.passthrough }}"
+  tasks:
+    - import_tasks: tasks/users.yml
+    - import_tasks: tasks/disks.yml
+
+    - name: Create test file in home directory
+      copy:
+        content: |
+          Ansible Provisioning Successful: {{ passthrough }} : {{ ansible_date_time.date }}: {{ ansible_date_time.time }}: {{ ansible_hostname }}
+        dest: "/tmp/ansible_verification.txt"
+        mode: '0644'
+
+    - name: Output the success message
+      command: cat /tmp/ansible_verification.txt
+      register: cat_output
+
+    - name: Show the output
+      debug:
+        msg: "{{ cat_output.stdout }}"
