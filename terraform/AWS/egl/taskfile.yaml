@@ -15,7 +15,7 @@ tasks:
   info:
     dotenv: ['./envs/.env.{{.ENV}}']
     cmds:
-      - echo "LOADED - './envs/.env.{{.ENV}}' and File ./envs/{{.ENV}}.tfvars"
+      - echo "LOADED - './envs/.env.{{.ENV}}' and File ./envs/{{.ENV}}.tfvars and profile is {{.AWS_PROFILE}}"
   init:
     dotenv: ['./envs/.env.{{.ENV}}']
     cmds:
