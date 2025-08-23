@@ -1,0 +1,43 @@
+# task init
+# task plan ENV=enva
+version: '3'
+
+env:
+  ENV: enva             # default value
+
+tasks:
+  clean:
+    cmds:
+      - rm -rf .terraform
+      - rm -rf .terraform.lock.hcl
+      - rm -rf terraform.tfstate
+      - rm -rf terraform.tfstate.backup
+  info:
+    dotenv: ['./envs/.env.{{.ENV}}']
+    cmds:
+      - echo "LOADED - './envs/.env.{{.ENV}}' and File ./envs/{{.ENV}}.tfvars"
+  init:
+    dotenv: ['./envs/.env.{{.ENV}}']
+    cmds:
+      - tfenv use 1.13.0
+      - terraform init
+  plan:
+    dotenv: ['./envs/.env.{{.ENV}}']
+    cmds:
+      - terraform plan -var-file="./envs/{{.ENV}}.tfvars"
+  apply:
+    dotenv: ['./envs/.env.{{.ENV}}']
+    cmds:
+      - terraform apply -var-file="./envs/{{.ENV}}.tfvars"
+  auto-apply:
+    dotenv: ['./envs/.env.{{.ENV}}']
+    cmds:
+      - terraform apply -var-file="./envs/{{.ENV}}.tfvars" -auto-approve
+  destroy:
+    dotenv: ['./envs/.env.{{.ENV}}']
+    cmds:
+      - terraform destroy -var-file="./envs/{{.ENV}}.tfvars"
+  auto-destroy:
+    dotenv: ['./envs/.env.{{.ENV}}']
+    cmds:
+      - terraform destroy -var-file="./envs/{{.ENV}}.tfvars" -auto-approve

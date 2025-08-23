@@ -1,0 +1,2 @@
+projectName = "EGL"
+envName     = "enva"

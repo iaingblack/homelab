@@ -1,0 +1,43 @@
+# You cant load the dotenv at the root level, it gets ignored. 
+# Nor have a task that loads it and then have other depend on it. Has t be per task you do it
+version: '3'
+
+env:
+  ENV: deva             # default value
+  VARFILE: enva.tfvars  # default value
+
+tasks:
+  clean:
+    cmds:
+      - rm -rf .terraform
+      - rm -rf .terraform.lock.hcl
+      - rm -rf terraform.tfstate
+      - rm -rf terraform.tfstate.backup
+  info:
+    dotenv: ['.env.{{.ENV}}']
+    cmds:
+      - echo "LOADED - '.env.{{.ENV}}' and File {{.VARFILE}}"
+  init:
+    dotenv: ['.env.{{.ENV}}']
+    cmds:
+      - terraform init
+  plan:
+    dotenv: ['.env.{{.ENV}}']
+    cmds:
+      - terraform plan -var-file="{{.VARFILE}}"
+  apply:
+    dotenv: ['.env.{{.ENV}}']
+    cmds:
+      - terraform apply -var-file="{{.VARFILE}}"
+  auto-apply:
+    dotenv: ['.env.{{.ENV}}']
+    cmds:
+      - terraform apply -var-file="{{.VARFILE}}" -auto-approve
+  destroy:
+    dotenv: ['.env.{{.ENV}}']
+    cmds:
+      - terraform destroy -var-file="{{.VARFILE}}"
+  auto-destroy:
+    dotenv: ['.env.{{.ENV}}']
+    cmds:
+      - terraform destroy -var-file="{{.VARFILE}}" -auto-approve
