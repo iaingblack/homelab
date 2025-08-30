@@ -1,0 +1,14 @@
+---
+- name: Manage Windows EC2 via SSM
+  hosts: windows
+  gather_facts: false
+  tasks:
+    - name: Stop Spooler Service
+      win_service:
+        name: spooler
+        state: stopped
+
+    - name: Create a Directory
+      win_file:
+        path: C:\Temp\SSM_Ansible_Test
+        state: directory

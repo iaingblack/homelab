@@ -1,2 +1,0 @@
-projectName = "EGL"
-envName     = "enva"
