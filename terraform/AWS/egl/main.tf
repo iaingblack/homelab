@@ -2,6 +2,6 @@ resource "aws_vpc" "main" {
   cidr_block = "10.0.0.0/16"
   tags = {
     Project = var.projectName
-    Name    = "vpc-${var.envName}"
+    Name    = "${local.resource_prefix}-vpc"
   }
 }
