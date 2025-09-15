@@ -1,0 +1,64 @@
+Description: Nested CloudFormation template for creating a VPC and two private subnets.
+Parameters:
+  VpcCidrBlock:
+    Type: String
+    Description: CIDR block for the VPC
+  Subnet1CidrBlock:
+    Type: String
+    Description: CIDR block for the first private subnet
+  Subnet2CidrBlock:
+    Type: String
+    Description: CIDR block for the second private subnet
+  EnvironmentName:
+    Type: String
+    Description: Environment name for resource tagging
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCidrBlock
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-VPC"
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref Subnet1CidrBlock
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-PrivateSubnet1"
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref Subnet2CidrBlock
+      AvailabilityZone: !Select [1, !GetAZs ""]
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-PrivateSubnet2"
+Outputs:
+  VpcId:
+    Description: ID of the VPC
+    Value: !Ref VPC
+    Export:
+      Name: !Sub "${EnvironmentName}-VpcId"
+  Subnet1Id:
+    Description: ID of the first private subnet
+    Value: !Ref PrivateSubnet1
+    Export:
+      Name: !Sub "${EnvironmentName}-Subnet1Id"
+  Subnet2Id:
+    Description: ID of the second private subnet
+    Value: !Ref PrivateSubnet2
+    Export:
+      Name: !Sub "${EnvironmentName}-Subnet2Id"

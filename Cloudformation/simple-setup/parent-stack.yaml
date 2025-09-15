@@ -1,0 +1,104 @@
+Description: Parent CloudFormation template for deploying a VPC, subnets, EC2 instance, and IAM role.
+Parameters:
+  EnvironmentName:
+    Type: String
+    Description: Environment name for resource tagging (e.g., dev, prod)
+    Default: dev
+    AllowedValues: [dev, test, prod]
+  InstanceType:
+    Type: String
+    Description: EC2 instance type
+    Default: t3.micro
+    AllowedValues: [t3.micro, t3.small, t3.medium]
+  VpcCidrBlock:
+    Type: String
+    Description: CIDR block for the VPC
+    Default: 10.0.0.0/16
+  Subnet1CidrBlock:
+    Type: String
+    Description: CIDR block for the first private subnet
+    Default: 10.0.16.0/20
+  Subnet2CidrBlock:
+    Type: String
+    Description: CIDR block for the second private subnet
+    Default: 10.0.32.0/20
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Name of an existing EC2 KeyPair for SSH access
+    Default: ""
+Mappings:
+  RegionAMIMap:
+    us-east-1:
+      Windows2025: ami-1234567890abcdef0 # Placeholder AMI for Windows Server 2025
+    us-west-2:
+      Windows2025: ami-0987654321fedcba0 # Placeholder AMI for Windows Server 2025
+Conditions:
+  HasKeyPair: !Not [!Equals [!Ref KeyName, ""]]
+Resources:
+  VPCStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://s3.amazonaws.com/cf-templates/vpc-template.yaml
+      Parameters:
+        VpcCidrBlock: !Ref VpcCidrBlock
+        Subnet1CidrBlock: !Ref Subnet1CidrBlock
+        Subnet2CidrBlock: !Ref Subnet2CidrBlock
+        EnvironmentName: !Ref EnvironmentName
+  AutoScalingRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${EnvironmentName}-AutoScalingRole"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: AutoScalingManagement
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - autoscaling:*
+                  - ec2:Describe*
+                  - cloudwatch:PutMetricData
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: "*"
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvironmentName
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref AutoScalingRole
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      ImageId: !FindInMap [RegionAMIMap, !Ref "AWS::Region", Windows2025]
+      SubnetId: !GetAtt VPCStack.Outputs.Subnet1Id
+      IamInstanceProfile: !Ref InstanceProfile
+      KeyName: !If [HasKeyPair, !Ref KeyName, !Ref "AWS::NoValue"]
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-Windows2025-Instance"
+Outputs:
+  InstanceId:
+    Description: ID of the EC2 instance
+    Value: !Ref EC2Instance
+    Export:
+      Name: !Sub "${EnvironmentName}-InstanceId"
+  InstancePublicIP:
+    Description: Public IP of the EC2 instance
+    Value: !GetAtt EC2Instance.PublicIp
+  RoleArn:
+    Description: ARN of the IAM role
+    Value: !GetAtt AutoScalingRole.Arn
