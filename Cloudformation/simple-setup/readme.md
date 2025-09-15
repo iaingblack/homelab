@@ -1,14 +1,16 @@
 # KodeKloud
 
+You need to upload the referenced stack to an s3 bucket... Ughh...
+
 ```bash
-aws cloudformation validate-template --template-body file://vpc-template.yaml --profile kodekloud
+aws cloudformation validate-template --template-body file://stack.yaml --profile kodekloud
 ```
 
 ```bash
 aws ec2 create-key-pair --key-name MyKeyPair --query 'KeyMaterial' --output text > MyKeyPair.pem --profile kodekloud
 chmod 400 MyKeyPair.pem
 
-aws cloudformation create-stack --stack-name MyStack --template-body file://parent-stack.yaml --parameters ParameterKey=EnvironmentName,ParameterValue=dev ParameterKey=KeyName,ParameterValue=MyKeyPair --capabilities CAPABILITY_NAMED_IAM --profile kodekloud --disable-rollback
+aws cloudformation create-stack --stack-name MyStack --template-body file://stack.yaml --parameters ParameterKey=EnvironmentName,ParameterValue=dev ParameterKey=KeyName,ParameterValue=MyKeyPair --capabilities CAPABILITY_NAMED_IAM --profile kodekloud --disable-rollback
 
 aws cloudformation delete-stack --stack-name MyStack
 ```

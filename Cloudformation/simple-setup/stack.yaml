@@ -1,0 +1,151 @@
+Description: CloudFormation template for deploying a VPC, two private subnets, EC2 instance, and IAM role.
+
+Parameters:
+  EnvironmentName:
+    Type: String
+    Description: Environment name for resource tagging (e.g., dev, prod)
+    Default: dev
+    AllowedValues: [dev, test, prod]
+  InstanceType:
+    Type: String
+    Description: EC2 instance type
+    Default: t3.micro
+    AllowedValues: [t3.micro, t3.small, t3.medium]
+  VpcCidrBlock:
+    Type: String
+    Description: CIDR block for the VPC
+    Default: 10.0.0.0/16
+  Subnet1CidrBlock:
+    Type: String
+    Description: CIDR block for the first private subnet
+    Default: 10.0.16.0/20
+  Subnet2CidrBlock:
+    Type: String
+    Description: CIDR block for the second private subnet
+    Default: 10.0.32.0/20
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Name of an existing EC2 KeyPair for SSH access
+    Default: ""
+Mappings:
+  RegionAMIMap:
+    us-east-1:
+      Windows2025: ami-1234567890abcdef0 # Placeholder AMI for Windows Server 2025
+    us-west-2:
+      Windows2025: ami-0987654321fedcba0 # Placeholder AMI for Windows Server 2025
+Conditions:
+  HasKeyPair: !Not [!Equals [!Ref KeyName, ""]]
+
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCidrBlock
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-VPC"
+
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref Subnet1CidrBlock
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-PrivateSubnet1"
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref Subnet2CidrBlock
+      AvailabilityZone: !Select [1, !GetAZs ""]
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-PrivateSubnet2"
+
+  AutoScalingRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${EnvironmentName}-AutoScalingRole"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: AutoScalingManagement
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - autoscaling:*
+                  - ec2:Describe*
+                  - cloudwatch:PutMetricData
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: "*"
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvironmentName
+
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref AutoScalingRole
+
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      ImageId: !FindInMap [RegionAMIMap, !Ref "AWS::Region", Windows2025]
+      SubnetId: !Ref PrivateSubnet1
+      IamInstanceProfile: !Ref InstanceProfile
+      KeyName: !If [HasKeyPair, !Ref KeyName, !Ref "AWS::NoValue"]
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-Windows2025-Instance"
+
+Outputs:
+  VpcId:
+    Description: ID of the VPC
+    Value: !Ref VPC
+    Export:
+      Name: !Sub "${EnvironmentName}-VpcId"
+  Subnet1Id:
+    Description: ID of the first private subnet
+    Value: !Ref PrivateSubnet1
+    Export:
+      Name: !Sub "${EnvironmentName}-Subnet1Id"
+  Subnet2Id:
+    Description: ID of the second private subnet
+    Value: !Ref PrivateSubnet2
+    Export:
+      Name: !Sub "${EnvironmentName}-Subnet2Id"
+  InstanceId:
+    Description: ID of the EC2 instance
+    Value: !Ref EC2Instance
+    Export:
+      Name: !Sub "${EnvironmentName}-InstanceId"
+  InstancePublicIP:
+    Description: Public IP of the EC2 instance
+    Value: !GetAtt EC2Instance.PublicIp
+  RoleArn:
+    Description: ARN of the IAM role
+    Value: !GetAtt AutoScalingRole.Arn
