@@ -12,12 +12,12 @@ chmod 400 MyKeyPair.pem
 
 aws cloudformation create-stack --stack-name MyStack --template-body file://stack.yaml --parameters ParameterKey=EnvironmentName,ParameterValue=dev ParameterKey=KeyName,ParameterValue=MyKeyPair --capabilities CAPABILITY_NAMED_IAM --profile kodekloud --disable-rollback
 
-aws cloudformation delete-stack --stack-name MyStack
+aws cloudformation delete-stack --stack-name MyStack --profile kodekloud
 ```
 
 Drift
 ```bash
-aws cloudformation detect-stack-drift --profile my-profilena
+aws cloudformation detect-stack-drift --profile kodekloud
 ```
 
 
