@@ -1,8 +1,38 @@
 ---
-- name: Install Docker from official repo on Ubuntu 24.04
-  hosts: ubuntu_hosts
+- name: Install Server Tools
+  hosts: all
   become: yes
   tasks:
+
+    # ──────────────────────────────────────────────────────────────
+    # tasks: install Zsh + Oh My Zsh
+    # ──────────────────────────────────────────────────────────────
+    - name: Install zsh package
+      become: yes
+      apt:
+        name: zsh
+        state: present
+        update_cache: yes
+
+    - name: Check if Oh My Zsh is already installed
+      stat:
+        path: "{{ ansible_user_dir }}/.oh-my-zsh"
+      register: ohmyzsh_dir
+
+    - name: Install Oh My Zsh (if missing)
+      when: not ohmyzsh_dir.stat.exists
+      shell: >
+        sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" --unattended
+      args:
+        creates: "{{ ansible_user_dir }}/.oh-my-zsh"
+      become: yes
+      become_user: "{{ ansible_user_id }}"   # run as the target user, not root
+
+    - name: Set Zsh as default shell for the user
+      become: yes
+      user:
+        name: "{{ ansible_user_id }}"
+        shell: /usr/bin/zsh
 
     - name: Install required packages
       apt:
@@ -14,18 +44,35 @@
         state: present
         update_cache: yes
 
-    - name: Add Docker’s official GPG key
-      apt_key:
-        url: https://download.docker.com/linux/ubuntu/gpg
-        state: present
+    - name: Ensure keyrings directory exists
+      become: yes
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
 
-    - name: Add Docker repository
+
+    # ──────────────────────────────────────────────────────────────
+    # tasks: Install Docker 
+    # ──────────────────────────────────────────────────────────────
+    - name: Download Docker GPG key
+      become: yes
+      get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.gpg
+        mode: '0644'
+
+    - name: Add Docker stable repository (Ubuntu 24.04 supported)
+      become: yes
       apt_repository:
-        repo: deb [arch={{ ansible_architecture }}] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable
+        repo: >-
+          deb [arch={{ ansible_architecture }} signed-by=/etc/apt/keyrings/docker.gpg]
+          https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable
         state: present
         filename: docker
 
     - name: Install Docker Engine
+      become: yes
       apt:
         name:
           - docker-ce
