@@ -17,7 +17,6 @@ tasks:
     cmds:
       - ansible-playbook './playbooks/{{.PLAYBOOK}}' -i {{.IP}}, -u {{.USER}} --private-key {{.SSH_KEY}}
 
-
   setup-server:
     desc: Run Ansible playbooks to quickly set up a new server (Ansible and Docker)
     cmds:

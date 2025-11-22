@@ -2,6 +2,11 @@
 - name: Install Docker and Docker Compose on Debian Trixie
   hosts: all
   become: true
+  pre_tasks:
+    - name: Fail if not running on Debian 13
+      fail:
+        msg: "This playbook only supports Debian 13 (Trixie)."
+      when: not (ansible_facts['distribution'] == "Debian" and ansible_facts['distribution_major_version'] == "13")
   tasks:
     - name: Ensure required apt packages are installed
       apt:

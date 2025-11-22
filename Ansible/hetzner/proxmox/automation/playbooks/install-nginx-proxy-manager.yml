@@ -1,0 +1,63 @@
+---
+- name: Setup Nginx Proxy Manager as a Docker container
+  hosts: all
+  become: true
+  pre_tasks:
+    - name: Fail if not running on Debian 13
+      fail:
+        msg: "This playbook only supports Debian 13 (Trixie)."
+      when: not (ansible_facts['distribution'] == "Debian" and ansible_facts['distribution_major_version'] == "13")
+  vars:
+    npm_data_dir: /opt/nginx-proxy-manager/data
+    npm_letsencrypt_dir: /opt/nginx-proxy-manager/letsencrypt
+    npm_image: 'jc21/nginx-proxy-manager:latest'
+    npm_container_name: 'nginx-proxy-manager'
+    npm_ports:
+      - "80:80"
+      - "81:81"
+      - "443:443"
+  tasks:
+    - name: Ensure Docker is installed
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: present
+        update_cache: yes
+
+    - name: Ensure Docker Compose plugin is installed
+      apt:
+        name: docker-compose-plugin
+        state: present
+
+    - name: Create Nginx Proxy Manager data directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+      loop:
+        - "{{ npm_data_dir }}"
+        - "{{ npm_letsencrypt_dir }}"
+
+    - name: Run Nginx Proxy Manager container as root
+      community.docker.docker_container:
+        name: "{{ npm_container_name }}"
+        image: "{{ npm_image }}"
+        restart_policy: always
+        ports: "{{ npm_ports }}"
+        volumes:
+          - "{{ npm_data_dir }}:/data"
+          - "{{ npm_letsencrypt_dir }}:/etc/letsencrypt"
+        user: "0"
+        state: started
+        security_opts:
+          - apparmor:unconfined
+      
+    - name: Connection Info
+      debug:
+        msg: |
+          Nginx Proxy Manager has been installed and is running in a Docker container.
+          Access the web interface at http://{{ ansible_host }}:81
