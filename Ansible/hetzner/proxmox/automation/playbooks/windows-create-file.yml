@@ -1,0 +1,13 @@
+---
+- name: Create a file on Windows
+  hosts: all
+  tasks:
+    - name: Ensure C:\Ansible folder exists
+      win_file:
+        path: C:\Ansible
+        state: directory
+
+    - name: Create a test file in C:\Ansible
+      win_copy:
+        content: "Hello from Ansible!"
+        dest: C:\Ansible\ansible_test.txt

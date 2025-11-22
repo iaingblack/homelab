@@ -1,0 +1,16 @@
+---
+- name: Download VirtIO ISO to Proxmox server ISOs folder
+  hosts: all
+  become: true
+  tasks:
+    - name: Ensure ISOs directory exists
+      file:
+        path: /var/lib/vz/template/iso
+        state: directory
+        mode: '0755'
+
+    - name: Download VirtIO ISO image
+      get_url:
+        url: https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/stable-virtio/virtio-win.iso
+        dest: /var/lib/vz/template/iso/virtio-win.iso
+        mode: '0644'

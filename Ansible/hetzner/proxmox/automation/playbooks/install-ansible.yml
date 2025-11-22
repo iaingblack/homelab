@@ -1,5 +1,5 @@
 ---
-- name: Install Ansible
+- name: Install Ansible and pywinrm
   hosts: all
   become: true
   tasks:
@@ -8,7 +8,25 @@
         update_cache: yes
         upgrade: dist
 
-    - name: Install ansible
+    - name: Install ansible and pip3
       apt:
-        name: ansible
+        name:
+          - ansible
+          - python3-pip
         state: present
+
+    - name: Install pipx
+      apt:
+        name: pipx
+        state: present
+
+    - name: Ensure pipx is in PATH
+      shell: "export PATH=$PATH:/usr/local/bin"
+      args:
+        executable: /bin/bash
+
+    - name: Install pywinrm via pip3 with override
+      pip:
+        name: pywinrm>=0.3.0
+        executable: pip3
+        extra_args: --break-system-packages
