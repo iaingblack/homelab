@@ -8,7 +8,7 @@ apt install ansible
 
 ## Setup
 
-Copy setup-dhcp.yml to the other server.
+Copy playbook files to the other server.
 
 ```bash
 ssh -i /root/.ssh/ib_ssh root@10.10.10.2

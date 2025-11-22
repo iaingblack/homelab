@@ -1,0 +1,31 @@
+---
+- name: Install Task (go-task) on Linux
+  hosts: all
+  become: true
+  tasks:
+    - name: Download Task binary
+      get_url:
+        url: https://github.com/go-task/task/releases/latest/download/task_linux_amd64.tar.gz
+        dest: /tmp/task_linux_amd64.tar.gz
+
+    - name: Extract Task binary
+      unarchive:
+        src: /tmp/task_linux_amd64.tar.gz
+        dest: /usr/local/bin/
+        remote_src: yes
+        creates: /usr/local/bin/task
+
+    - name: Ensure Task binary is executable
+      file:
+        path: /usr/local/bin/task
+        mode: '0755'
+        state: file
+
+    - name: Verify Task installation
+      command: task --version
+      register: task_version
+      changed_when: false
+
+    - name: Show Task version
+      debug:
+        msg: "{{ task_version.stdout }}"

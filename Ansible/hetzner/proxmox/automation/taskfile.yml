@@ -1,0 +1,26 @@
+version: '3'
+
+# Run like: ansible-playbook setup-dhcp.yml -i 10.10.10.2, -u root --private-key ~/.ssh/ib_ssh
+# Run like: task deploy-playbook IP=10.10.10.2 SSH_KEY='~/.ssh/ib_ssh' USER=root PLAYBOOK=playbook.yml
+# task deploy-playbook IP=proxmox.rootisgod.com PLAYBOOK=playbook.yml
+# task setup-server IP=proxmox.rootisgod.com
+
+vars:
+  SSH_KEY: ~/.ssh/ib_ssh
+  USER: root
+  IP: proxmox.rootisgod.com
+  PLAYBOOK: playbook.yml
+
+tasks:
+  deploy-playbook:
+    desc: Run the ansible playbook
+    cmds:
+      - ansible-playbook './playbooks/{{.PLAYBOOK}}' -i {{.IP}}, -u {{.USER}} --private-key {{.SSH_KEY}}
+
+
+  setup-server:
+    desc: Run Ansible playbooks to quickly set up a new server (Ansible and Docker)
+    cmds:
+      - task deploy-playbook SSH_KEY={{.SSH_KEY}} IP={{.IP}} USER={{.USER}} PLAYBOOK=install-ansible.yml
+      - task deploy-playbook SSH_KEY={{.SSH_KEY}} IP={{.IP}} USER={{.USER}} PLAYBOOK=install-docker.yml
+      - task deploy-playbook SSH_KEY={{.SSH_KEY}} IP={{.IP}} USER={{.USER}} PLAYBOOK=install-taskfile.yml
