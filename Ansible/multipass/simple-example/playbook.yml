@@ -1,0 +1,9 @@
+---
+- name: Write a file on the Multipass VM
+  hosts: all
+  tasks:
+    - name: Create a test file in /tmp
+      copy:
+        content: "Hello from Ansible!"
+        dest: /tmp/ansible_test.txt
+        mode: '0644'
