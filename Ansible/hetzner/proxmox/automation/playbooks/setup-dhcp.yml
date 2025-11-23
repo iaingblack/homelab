@@ -14,30 +14,17 @@
         name: isc-dhcp-server
         state: present
 
-    - name: Configure /etc/dhcp/dhcpd.conf
-      lineinfile:
-        path: /etc/dhcp/dhcpd.conf
-        regexp: '^#?option domain-name-servers'
-        line: 'option domain-name-servers 8.8.8.8;'
-
-    - name: Ensure subnet 10.10.10.0/24 is defined
-      blockinfile:
-        path: /etc/dhcp/dhcpd.conf
-        block: |
+    - name: Write dhcpd.conf with exact contents
+      copy:
+        dest: /etc/dhcp/dhcpd.conf
+        content: |
+          option domain-name-servers 8.8.8.8;
           subnet 10.10.10.0 netmask 255.255.255.0 {
             range 10.10.10.10 10.10.10.199;
             option routers 10.10.10.1;
           }
-
-    - name: Set default-lease-time, max-lease-time, ddns-update-style
-      blockinfile:
-        path: /etc/dhcp/dhcpd.conf
-        block: |
           default-lease-time 600;
           max-lease-time 7200;
           ddns-update-style none;
+        mode: '0644'
 
-    - name: Restart isc-dhcp-server
-      service:
-        name: isc-dhcp-server
-        state: restarted

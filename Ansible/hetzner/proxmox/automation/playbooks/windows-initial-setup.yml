@@ -1,0 +1,13 @@
+---
+- name: Setup Windows Autologon tool
+  hosts: all
+  tasks:
+    - name: Ensure C:\Tools exists
+      win_file:
+        path: C:\Tools
+        state: directory
+
+    - name: Download Sysinternals Autologon
+      win_get_url:
+        url: https://download.sysinternals.com/files/Autologon.zip
+        dest: C:\Tools\Autologon.zip
