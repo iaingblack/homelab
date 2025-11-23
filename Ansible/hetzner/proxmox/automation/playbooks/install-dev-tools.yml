@@ -8,12 +8,40 @@
         update_cache: yes
         upgrade: dist
 
+    # SNAPD
+    - name: Install snapd
+      apt:
+        name: snapd
+        state: present
+
     # GIT
     - name: Install git
       apt:
         name:
           - git
         state: present
+
+    - name: Set global git user.name
+      ansible.builtin.command: git config --global user.name "Iain Black"
+      args:
+        creates: /root/.gitconfig   # idempotent-ish
+
+    - name: Set global git user.email
+      ansible.builtin.command: git config --global user.email "iain@rootisgod.com"
+      args:
+        creates: /root/.gitconfig
+
+    # MULTIPASS
+    - name: Install multipass
+      snap:
+        name: multipass
+        state: present
+    
+    - name: Install passgo
+      get_url:
+        url: https://github.com/rootisgod/passgo/releases/download/v0.46/passgo-linux-amd64
+        dest: /usr/local/bin/passgo
+        mode: '0755'
 
     # TASKFILE
     - name: Download Task binary
