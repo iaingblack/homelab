@@ -1,8 +1,21 @@
 ---
-- name: Install Task (go-task) on Linux
+- name: Install Some Common Dev Tools
   hosts: all
   become: true
   tasks:
+    - name: Update apt cache and upgrade packages
+      apt:
+        update_cache: yes
+        upgrade: dist
+
+    # GIT
+    - name: Install git
+      apt:
+        name:
+          - git
+        state: present
+
+    # TASKFILE
     - name: Download Task binary
       get_url:
         url: https://github.com/go-task/task/releases/latest/download/task_linux_amd64.tar.gz

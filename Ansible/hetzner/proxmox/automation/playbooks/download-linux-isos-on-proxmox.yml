@@ -1,0 +1,17 @@
+---
+- name: Download Linux ISOs to Proxmox server ISOs folder
+  hosts: all
+  become: true
+  tasks:
+    - name: Ensure ISOs directory exists
+      file:
+        path: /var/lib/vz/template/iso
+        state: directory
+        mode: '0755'
+
+    - name: Download Ubuntu 24.04 ISO image
+      get_url:
+        url: https://creeperhost.mm.fcix.net/ubuntu-releases/24.04.3/ubuntu-24.04.3-live-server-amd64.iso
+        dest: /var/lib/vz/template/iso/ubuntu-24.04-live-server-amd64.iso
+        mode: '0644'
+        

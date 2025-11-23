@@ -22,4 +22,4 @@ tasks:
     cmds:
       - task deploy-playbook SSH_KEY={{.SSH_KEY}} IP={{.IP}} USER={{.USER}} PLAYBOOK=install-ansible.yml
       - task deploy-playbook SSH_KEY={{.SSH_KEY}} IP={{.IP}} USER={{.USER}} PLAYBOOK=install-docker.yml
-      - task deploy-playbook SSH_KEY={{.SSH_KEY}} IP={{.IP}} USER={{.USER}} PLAYBOOK=install-taskfile.yml
+      - task deploy-playbook SSH_KEY={{.SSH_KEY}} IP={{.IP}} USER={{.USER}} PLAYBOOK=install-dev-tools.yml
