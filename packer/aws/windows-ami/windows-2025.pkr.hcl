@@ -19,7 +19,7 @@ variable "source_ami_filter_name" {
 
 variable "instance_type" {
   type    = string
-  default = "t3.medium"        # 2025 needs decent CPU/RAM for sysprep
+  default = "t3.small"        # 2025 needs decent CPU/RAM for sysprep
 }
 
 variable "winrm_username" {
@@ -89,7 +89,11 @@ build {
     ]
   }
 
-# Restart to ensure everything is clean, then Packer auto-syspreps
+  provisioner "ansible" {
+    playbook_file = "./ansible/playbook.yml"
+  }
+
+  # Restart to ensure everything is clean, then Packer auto-syspreps
   provisioner "windows-restart" {
     restart_timeout = "10m"
   }
