@@ -1,8 +1,12 @@
 packer {
   required_plugins {
     amazon = {
-      version = ">= 1.3.2"
+      version = ">= 1.2.0"
       source  = "github.com/hashicorp/amazon"
+    }
+    ansible = {
+      version = ">= 1.1.0"
+      source  = "github.com/hashicorp/ansible"
     }
   }
 }
@@ -12,89 +16,69 @@ variable "aws_region" {
   default = "us-east-1"
 }
 
-variable "source_ami_filter_name" {
-  type    = string
-  default = "Windows_Server-2025-English-Full-Base-*"
-}
-
-variable "instance_type" {
-  type    = string
-  default = "t3.medium"        # 2025 needs decent CPU/RAM for sysprep
-}
-
-variable "winrm_username" {
-  type    = string
-  default = "Administrator"
-}
-
-source "amazon-ebs" "windows2025" {
+# 1. Define the Source (The Builder)
+source "amazon-ebs" "windows-2022" {
   profile         = "kodekloud"
-  region          = var.aws_region
-  instance_type   = var.instance_type
-  winrm_username  = var.winrm_username
-  communicator    = "winrm"
-  winrm_use_ssl   = true
-  winrm_insecure  = true
-  winrm_timeout   = "20m"
+  ami_name      = "golden-windows-2022-{{timestamp}}"
+  instance_type = "t3.medium" # Windows needs RAM
+  region        = var.aws_region
+  
+  # Connection Details
+  communicator   = "winrm"
+  winrm_username = "Administrator"
+  winrm_use_ssl  = true
+  winrm_insecure = true
+  
+  # This enables WinRM so Packer can talk to the instance
+  user_data_file = "bootstrap_winrm.txt"
 
-  # Latest official Windows Server 2025 Base AMI (as of Nov 2025)
   source_ami_filter {
     filters = {
-      name                = var.source_ami_filter_name
+      name                = "Windows_Server-2022-English-Full-Base-*"
       root-device-type    = "ebs"
       virtualization-type = "hvm"
     }
     most_recent = true
-    owners      = ["amazon"]   # Microsoft-owned AMIs are under amazon account
+    owners      = ["801119661308"] # Amazon's Owner ID
   }
-
-  ami_name        = "windows-server-2025-choco-{{isotime \"2006-01-02\"}}"
-  ami_description = "Windows Server 2025 Standard with Chocolatey - built {{isotime \"2006-01-02\"}}"
-
-  launch_block_device_mappings {
-    device_name           = "/dev/sda1"
-    volume_size           = 30
-    volume_type           = "gp3"
-    delete_on_termination = true
-  }
-
-  # Important for Windows 2025 – use AWS Windows user data
-  user_data_file = "userdata/FirstLogonCommands.xml"
 }
 
+# 2. Define the Build (The Provisioners)
 build {
-  sources = ["source.amazon-ebs.windows2025"]
+  sources = ["source.amazon-ebs.windows-2022"]
 
-  # Enable WinRM (required for Packer)
-  provisioner "powershell" {
-    script = "scripts/enable-winrm.ps1"
-  }
-
-  # Optional: Run Windows Update (uncomment if you added the plugin above)
-  # provisioner "windows-update" {
-  #   search_criteria = "IsInstalled=0 and DeploymentAction=Installation or Type='Software'"
-  #   filters         = ["Classification:Security Updates", "Classification:HotFixes"]
-  #   update_only     = true
-  # }
-
-  # Install Chocolatey
-  provisioner "powershell" {
-    script = "scripts/install-chocolatey.ps1"
-  }
-
-  # Optional: install some common tools via choco
+  # A. Wait for User Data to finish
+  # We check for the file created in our bootstrap script
   provisioner "powershell" {
     inline = [
-      "choco install -y git vim notepadplusplus 7zip"
+      "while ((Test-Path C:\\userdata_executed.txt) -ne $true) { Start-Sleep -Seconds 10 }",
+      "Write-Output 'User Data finished, WinRM ready.'"
     ]
   }
 
+  # B. Run Ansible
+  # Note: You must have 'ansible' and 'pywinrm' installed on the machine running Packer
   provisioner "ansible" {
-    playbook_file = "./ansible/playbook.yml"
+    playbook_file = "./playbook.yml"
+    user          = "Administrator"
+    use_proxy     = false
+    
+    # These extra arguments act as the inventory vars
+    extra_arguments = [
+      "-e", "ansible_winrm_server_cert_validation=ignore",
+      "-e", "ansible_connection=winrm",
+      "-e", "ansible_winrm_transport=basic",
+      "-e", "ansible_shell_type=powershell"
+    ]
   }
 
-  # Restart to ensure everything is clean, then Packer auto-syspreps
-  provisioner "windows-restart" {
-    restart_timeout = "10m"
+  # C. Generalize (Sysprep)
+  # This uses the AWS EC2Launch v2 tool to sysprep and shut down.
+  # Packer detects the shutdown and snaps the AMI.
+  provisioner "powershell" {
+    inline = [
+      "Write-Output 'Executing Sysprep...'",
+      "& 'C:\\Program Files\\Amazon\\EC2Launch\\EC2Launch.exe' sysprep --shutdown=true"
+    ]
   }
 }
