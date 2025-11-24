@@ -19,7 +19,7 @@ variable "source_ami_filter_name" {
 
 variable "instance_type" {
   type    = string
-  default = "t3.small"        # 2025 needs decent CPU/RAM for sysprep
+  default = "t3.medium"        # 2025 needs decent CPU/RAM for sysprep
 }
 
 variable "winrm_username" {
@@ -53,7 +53,7 @@ source "amazon-ebs" "windows2025" {
 
   launch_block_device_mappings {
     device_name           = "/dev/sda1"
-    volume_size           = 60
+    volume_size           = 30
     volume_type           = "gp3"
     delete_on_termination = true
   }
