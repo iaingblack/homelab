@@ -1,0 +1,63 @@
+---
+- name: Install Docker and Docker Compose on Debian Trixie
+  hosts: all
+  become: true
+  pre_tasks:
+    - name: Fail if not running on Ubuntu 24.04
+      fail:
+        msg: "This playbook only supports Ubuntu 24.04."
+      when: not (ansible_facts['distribution'] == "Ubuntu" and ansible_facts['distribution_major_version'] == "24")
+  tasks:
+    - name: Ensure required apt packages are installed
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+          - qemu-guest-agent
+        state: present
+        update_cache: yes
+
+    - name: Create keyrings directory
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+
+    - name: Download and install Docker's official GPG key
+      shell: |
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+        chmod a+r /etc/apt/keyrings/docker.gpg
+      args:
+        creates: /etc/apt/keyrings/docker.gpg
+
+    - name: Add Docker repository for Ubuntu 24.04
+      apt_repository:
+        repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu jammy stable"
+        state: present
+        filename: docker
+
+    - name: Update apt cache after adding Docker repo
+      apt:
+        update_cache: yes
+
+    - name: Install Docker Engine and CLI
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: present
+
+    - name: Install Docker Compose (standalone package)
+      apt:
+        name: docker-compose-plugin
+        state: present
+
+    - name: Ensure docker service is running
+      service:
+        name: docker
+        state: started
+        enabled: yes
