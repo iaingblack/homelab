@@ -1,0 +1,16 @@
+version: '3'
+
+vars:
+  CLUSTER_NAME: homelab-cluster
+
+tasks:
+  install-kind:
+    desc: Install KIND (Kubernetes in Docker) on the machine
+    cmds:
+      - curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-linux-amd64
+      - chmod +x ./kind
+      - sudo mv ./kind /usr/local/bin/kind
+      - echo "KIND installed successfully!"
+      - kind version
+    status:
+      - command -v kind

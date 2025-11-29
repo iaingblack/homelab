@@ -61,3 +61,54 @@
         name: docker
         state: started
         enabled: yes
+
+    - name: Download and install Kubernetes GPG key
+      shell: |
+        curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.31/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+        chmod a+r /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+      args:
+        creates: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+    - name: Add Kubernetes repository
+      apt_repository:
+        repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.31/deb/ /"
+        state: present
+        filename: kubernetes
+
+    - name: Update apt cache after adding Kubernetes repo
+      apt:
+        update_cache: yes
+
+    - name: Install kubectl
+      apt:
+        name: kubectl
+        state: present
+
+    - name: Get latest KIND version
+      uri:
+        url: https://api.github.com/repos/kubernetes-sigs/kind/releases/latest
+        method: GET
+        return_content: true
+      register: kind_release
+
+    - name: Download KIND binary
+      get_url:
+        url: "https://kind.sigs.k8s.io/dl/{{ kind_release.json.tag_name }}/kind-linux-amd64"
+        dest: /usr/local/bin/kind
+        mode: '0755'
+        owner: root
+        group: root
+
+    - name: Add user to docker group (for KIND to work without sudo)
+      user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: yes
+
+    - name: Create KIND cluster config directory
+      file:
+        path: /home/{{ ansible_user }}/.kind
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0755'

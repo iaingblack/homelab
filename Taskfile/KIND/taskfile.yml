@@ -1,0 +1,237 @@
+version: '3'
+
+vars:
+  CLUSTER_NAME: homelab-cluster
+  CONFIG_FILE: ./cluster-config.yaml
+
+tasks:
+  install-kind:
+    desc: Install KIND (Kubernetes in Docker) on the machine
+    cmds:
+      - curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-linux-amd64
+      - chmod +x ./kind
+      - sudo mv ./kind /usr/local/bin/kind
+      - echo "KIND installed successfully!"
+      - kind version
+    status:
+      - command -v kind
+
+  install-kubectl:
+    desc: Install kubectl on the machine
+    cmds:
+      - curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+      - chmod +x kubectl
+      - sudo mv kubectl /usr/local/bin/kubectl
+      - echo "kubectl installed successfully!"
+      - kubectl version --client
+    status:
+      - command -v kubectl
+
+  install-tools:
+    desc: Install both KIND and kubectl
+    deps: [install-kubectl, install-kind]
+
+  create-cluster:
+    desc: Create a KIND cluster with specified name
+    cmds:
+      - kind create cluster --name {{.CLUSTER_NAME}} --config {{.CONFIG_FILE}}
+      - kubectl cluster-info --context kind-{{.CLUSTER_NAME}}
+    preconditions:
+      - sh: command -v kind
+        msg: "KIND is not installed"
+      - sh: command -v kubectl
+        msg: "kubectl is not installed"
+      - sh: test -f {{.CONFIG_FILE}}
+        msg: "Cluster config file {{.CONFIG_FILE}} not found"
+
+  delete-cluster:
+    desc: Delete a KIND cluster with specified name
+    cmds:
+      - kind delete cluster --name {{.CLUSTER_NAME}}
+    preconditions:
+      - sh: command -v kind
+        msg: "KIND is not installed"
+
+  list-clusters:
+    desc: List all KIND clusters
+    cmds:
+      - kind get clusters
+
+  cluster-info:
+    desc: Get cluster info for the specified cluster
+    cmds:
+      - kubectl cluster-info --context kind-{{.CLUSTER_NAME}}
+    preconditions:
+      - sh: command -v kubectl
+        msg: "kubectl is not installed"
+
+  load-image:
+    desc: Load a Docker image into the KIND cluster
+    cmds:
+      - kind load docker-image {{.IMAGE}} --name {{.CLUSTER_NAME}}
+    preconditions:
+      - sh: command -v kind
+        msg: "KIND is not installed"
+    requires:
+      vars: [IMAGE]
+
+  create-config:
+    desc: Create a basic KIND cluster configuration file
+    cmds:
+      - |
+        cat > {{.CONFIG_FILE}} << EOF
+        kind: Cluster
+        apiVersion: kind.x-k8s.io/v1alpha4
+        name: {{.CLUSTER_NAME}}
+        nodes:
+        - role: control-plane
+          kubeadmConfigPatches:
+          - |
+            kind: InitConfiguration
+            nodeRegistration:
+              kubeletExtraArgs:
+                node-labels: "ingress-ready=true"
+          extraPortMappings:
+          - containerPort: 80
+            hostPort: 80
+            protocol: TCP
+          - containerPort: 443
+            hostPort: 443
+            protocol: TCP
+        - role: worker
+        - role: worker
+        EOF
+    generates:
+      - "{{.CONFIG_FILE}}"
+
+  setup:
+    desc: Setup a complete KIND cluster (create config + create cluster)
+    deps: [create-config]
+    cmds:
+      - task: create-cluster
+
+  cleanup:
+    desc: Delete cluster and remove config file
+    cmds:
+      - task: delete-cluster
+      - rm -f {{.CONFIG_FILE}}
+
+  restart-cluster:
+    desc: Delete and recreate the cluster
+    cmds:
+      - task: delete-cluster
+      - task: create-cluster
+
+  create-admin-user:
+    desc: Create admin user with cluster-admin privileges and get token
+    cmds:
+      - |
+        cat > admin-user-serviceaccount.yaml << EOF
+        apiVersion: v1
+        kind: ServiceAccount
+        metadata:
+          name: admin-user
+          namespace: kube-system
+        EOF
+      - |
+        cat > admin-user-rbac.yaml << EOF
+        apiVersion: rbac.authorization.k8s.io/v1
+        kind: ClusterRoleBinding
+        metadata:
+          name: admin-user
+        roleRef:
+          apiGroup: rbac.authorization.k8s.io
+          kind: ClusterRole
+          name: cluster-admin
+        subjects:
+        - kind: ServiceAccount
+          name: admin-user
+          namespace: kube-system
+        EOF
+      - kubectl apply -f admin-user-serviceaccount.yaml --context kind-{{.CLUSTER_NAME}}
+      - kubectl apply -f admin-user-rbac.yaml --context kind-{{.CLUSTER_NAME}}
+      - echo '- - - - - - - - - - - - - - - - - - - - - - - - - -'
+      - kubectl get -n kube-system secret $(kubectl get -n kube-system sa/admin-user -o jsonpath="{.secrets[0].name}" --context kind-{{.CLUSTER_NAME}}) -o go-template="{{.data.token | base64decode}}" --context kind-{{.CLUSTER_NAME}} | tee token-{{.CLUSTER_NAME}}.txt
+      - echo
+      - echo '- - - - - - - - - - - - - - - - - - - - - - - - - -'
+      - echo "Token saved to token-{{.CLUSTER_NAME}}.txt"
+    preconditions:
+      - sh: command -v kubectl
+        msg: "kubectl is not installed"
+    generates:
+      - admin-user-serviceaccount.yaml
+      - admin-user-rbac.yaml
+      - token-{{.CLUSTER_NAME}}.txt
+
+  install-dashboard:
+    desc: Install Kubernetes dashboard and start proxy
+    cmds:
+      - kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.3.1/aio/deploy/recommended.yaml --context kind-{{.CLUSTER_NAME}}
+      - echo "Dashboard installed. Run 'task start-proxy' to access it."
+      - |
+        echo "Then go to: http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/#/login"
+    preconditions:
+      - sh: command -v kubectl
+        msg: "kubectl is not installed"
+
+  start-proxy:
+    desc: Start kubectl proxy for dashboard access
+    cmds:
+      - echo "Starting proxy for cluster {{.CLUSTER_NAME}}..."
+      - |
+        echo "Dashboard will be available at: http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/#/login"
+      - kubectl proxy --context kind-{{.CLUSTER_NAME}}
+    preconditions:
+      - sh: command -v kubectl
+        msg: "kubectl is not installed"
+
+  create-remote-config:
+    desc: Create cluster config with remote access (specify HOST_IP)
+    cmds:
+      - |
+        cat > {{.CONFIG_FILE}} << EOF
+        kind: Cluster
+        apiVersion: kind.x-k8s.io/v1alpha4
+        name: {{.CLUSTER_NAME}}
+        networking:
+          ipFamily: ipv4
+          apiServerAddress: {{.HOST_IP | default "192.168.1.45"}}
+          apiServerPort: {{.API_PORT | default "45001"}}
+        nodes:
+        - role: control-plane
+          kubeadmConfigPatches:
+          - |
+            kind: InitConfiguration
+            nodeRegistration:
+              kubeletExtraArgs:
+                node-labels: "ingress-ready=true"
+          extraPortMappings:
+          - containerPort: 80
+            hostPort: 80
+            protocol: TCP
+          - containerPort: 443
+            hostPort: 443
+            protocol: TCP
+        - role: worker
+        - role: worker
+        EOF
+    generates:
+      - "{{.CONFIG_FILE}}"
+
+  setup-remote:
+    desc: Setup cluster with remote access (use HOST_IP and API_PORT vars)
+    deps: [create-remote-config]
+    cmds:
+      - task: create-cluster
+      - task: create-admin-user
+      - echo "Cluster {{.CLUSTER_NAME}} is accessible at https://{{.HOST_IP | default \"192.168.1.45\"}}:{{.API_PORT | default \"45001\"}}"
+      - echo "Use the token from token-{{.CLUSTER_NAME}}.txt for authentication"
+
+# Seems Broken
+  # get-connection-info:
+  #   desc: Display connection information for remote access
+  #   cmds:
+  #     - echo "Cluster: {{.CLUSTER_NAME}}"
+  #     - kubectl cluster-info --context kind-{{.CLUSTER_NAME}}
+  #     - echo "Admin token (if created):"
+  #     - cat token-{{.CLUSTER_NAME}}.txt 2>/dev/null || echo "No token file found. Run 'task create-admin-user' first."
