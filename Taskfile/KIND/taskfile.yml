@@ -10,6 +10,8 @@ version: '3'
 vars:
   NAME: test-cluster
   CONFIG_FILE: ./cluster-config.yaml
+  HOST_IP:
+    sh: hostname -I | awk '{print $1}'
 
 tasks:
   install-kind:
@@ -180,7 +182,7 @@ tasks:
       - kubectl apply -f admin-user-serviceaccount.yaml --context kind-{{.NAME}}
       - kubectl apply -f admin-user-rbac.yaml --context kind-{{.NAME}}
       - echo '- - - - - - - - - - - - - - - - - - - - - - - - - -'
-      - kubectl get -n kube-system secret $(kubectl get -n kube-system sa/admin-user -o jsonpath="{.secrets[0].name}" --context kind-{{.NAME}}) -o jsonpath="{.data.token}" --context kind-{{.NAME}} | base64 -d | tee token-{{.NAME}}.txt
+      - kubectl create token admin-user -n kube-system --context kind-{{.NAME}} | tee token-{{.NAME}}.txt
       - echo
       - echo '- - - - - - - - - - - - - - - - - - - - - - - - - -'
       - echo "Token saved to token-{{.NAME}}.txt"
@@ -192,13 +194,27 @@ tasks:
       - admin-user-rbac.yaml
       - token-{{.NAME}}.txt
 
+  get-admin-token:
+    desc: Get/refresh the admin user token for the cluster
+    cmds:
+      - echo '- - - - - - - - - - - - - - - - - - - - - - - - - -'
+      - kubectl create token admin-user -n kube-system --context kind-{{.NAME}} | tee token-{{.NAME}}.txt
+      - echo
+      - echo '- - - - - - - - - - - - - - - - - - - - - - - - - -'
+      - echo "Token refreshed and saved to token-{{.NAME}}.txt"
+    preconditions:
+      - sh: command -v kubectl
+        msg: "kubectl is not installed"
+      - sh: kubectl get sa admin-user -n kube-system --context kind-{{.NAME}} >/dev/null 2>&1
+        msg: "Admin user service account not found. Run 'task create-admin-user' first."
+
   install-dashboard:
     desc: Install Kubernetes dashboard and start proxy
     cmds:
       - kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.3.1/aio/deploy/recommended.yaml --context kind-{{.NAME}}
       - echo "Dashboard installed. Run 'task start-proxy' to access it."
       - |
-        echo "Then go to: http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/#/login"
+        echo "Then go to: http://{{.HOST_IP}}:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/#/login"
     preconditions:
       - sh: command -v kubectl
         msg: "kubectl is not installed"
@@ -206,9 +222,10 @@ tasks:
   start-proxy:
     desc: Start kubectl proxy for dashboard access
     cmds:
+      - task: get-admin-token
       - echo "Starting proxy for cluster {{.NAME}}..."
       - |
-        echo "Dashboard will be available at: http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/#/login"
+        echo "Dashboard will be available at: http://{{.HOST_IP}}:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/#/login"
       - kubectl proxy --context kind-{{.NAME}}
     preconditions:
       - sh: command -v kubectl
@@ -224,7 +241,7 @@ tasks:
         name: {{.NAME}}
         networking:
           ipFamily: ipv4
-          apiServerAddress: {{.HOST_IP | default "192.168.1.45"}}
+          apiServerAddress: {{.HOST_IP}}
           apiServerPort: {{.API_PORT | default "45001"}}
         nodes:
         - role: control-plane
@@ -255,8 +272,9 @@ tasks:
       - task: create-admin-user
       - task: install-dashboard
       - |
-        echo 'Cluster {{.NAME}} is accessible at https://{{.HOST_IP | default "192.168.1.45"}}:{{.API_PORT | default "45001"}}'
+        echo 'Cluster {{.NAME}} is accessible at https://{{.HOST_IP}}:{{.API_PORT | default "45001"}}'
       - echo "Use the token from token-{{.NAME}}.txt for authentication"
+      - task: start-proxy
 
 # Seems Broken
   # get-connection-info:
