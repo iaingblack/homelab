@@ -1,5 +1,12 @@
 version: '3'
 
+# Basic usage
+# https://www.rootisgod.com/2021/Cheap-and-Accessible-Kubernetes-Clusters-with-KIND/
+# task install-tools
+# task create-cluster
+# task setup-admin-user
+# task delete-cluster
+# task list-clusters
 vars:
   NAME: test-cluster
   CONFIG_FILE: ./cluster-config.yaml
@@ -246,7 +253,9 @@ tasks:
     cmds:
       - task: create-cluster
       - task: create-admin-user
-      - echo "Cluster {{.NAME}} is accessible at https://{{.HOST_IP | default \"192.168.1.45\"}}:{{.API_PORT | default \"45001\"}}"
+      - task: install-dashboard
+      - |
+        echo 'Cluster {{.NAME}} is accessible at https://{{.HOST_IP | default "192.168.1.45"}}:{{.API_PORT | default "45001"}}'
       - echo "Use the token from token-{{.NAME}}.txt for authentication"
 
 # Seems Broken
