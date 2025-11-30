@@ -14,3 +14,4 @@ Ansible/k8s/github-actions-runner/ib_ssh
 .DS_Store
 
 terraform/AWS/egl/.terraform.tfstate.lock.info
+Taskfile/KIND/token-**.txt

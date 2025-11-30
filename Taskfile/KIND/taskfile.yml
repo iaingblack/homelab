@@ -1,7 +1,7 @@
 version: '3'
 
 vars:
-  CLUSTER_NAME: homelab-cluster
+  NAME: test-cluster
   CONFIG_FILE: ./cluster-config.yaml
 
 tasks:
@@ -27,15 +27,37 @@ tasks:
     status:
       - command -v kubectl
 
+  install-k9s:
+    desc: Install k9s (Kubernetes CLI tool)
+    cmds:
+      - curl -sS https://webi.sh/k9s | sh;
+      - cp ~/.local/bin/k9s /usr/local/bin/k9s
+      - chmod +x /usr/local/bin/k9s
+      - echo "k9s installed successfully!"
+      - k9s version
+    status:
+      - command -v k9s
+
   install-tools:
-    desc: Install both KIND and kubectl
-    deps: [install-kubectl, install-kind]
+    desc: Install KIND, kubectl, and k9s
+    deps: [install-kubectl, install-kind, install-k9s]
 
   create-cluster:
     desc: Create a KIND cluster with specified name
     cmds:
-      - kind create cluster --name {{.CLUSTER_NAME}} --config {{.CONFIG_FILE}}
-      - kubectl cluster-info --context kind-{{.CLUSTER_NAME}}
+      - kind create cluster --name {{.NAME}}
+      - kubectl cluster-info --context kind-{{.NAME}}
+    preconditions:
+      - sh: command -v kind
+        msg: "KIND is not installed"
+      - sh: command -v kubectl
+        msg: "kubectl is not installed"
+
+  create-cluster-with-config:
+    desc: Create a KIND cluster with specified name
+    cmds:
+      - kind create cluster --name {{.NAME}} --config {{.CONFIG_FILE}}
+      - kubectl cluster-info --context kind-{{.NAME}}
     preconditions:
       - sh: command -v kind
         msg: "KIND is not installed"
@@ -47,7 +69,7 @@ tasks:
   delete-cluster:
     desc: Delete a KIND cluster with specified name
     cmds:
-      - kind delete cluster --name {{.CLUSTER_NAME}}
+      - kind delete cluster --name {{.NAME}}
     preconditions:
       - sh: command -v kind
         msg: "KIND is not installed"
@@ -60,7 +82,7 @@ tasks:
   cluster-info:
     desc: Get cluster info for the specified cluster
     cmds:
-      - kubectl cluster-info --context kind-{{.CLUSTER_NAME}}
+      - kubectl cluster-info --context kind-{{.NAME}}
     preconditions:
       - sh: command -v kubectl
         msg: "kubectl is not installed"
@@ -68,7 +90,7 @@ tasks:
   load-image:
     desc: Load a Docker image into the KIND cluster
     cmds:
-      - kind load docker-image {{.IMAGE}} --name {{.CLUSTER_NAME}}
+      - kind load docker-image {{.IMAGE}} --name {{.NAME}}
     preconditions:
       - sh: command -v kind
         msg: "KIND is not installed"
@@ -82,7 +104,7 @@ tasks:
         cat > {{.CONFIG_FILE}} << EOF
         kind: Cluster
         apiVersion: kind.x-k8s.io/v1alpha4
-        name: {{.CLUSTER_NAME}}
+        name: {{.NAME}}
         nodes:
         - role: control-plane
           kubeadmConfigPatches:
@@ -148,25 +170,25 @@ tasks:
           name: admin-user
           namespace: kube-system
         EOF
-      - kubectl apply -f admin-user-serviceaccount.yaml --context kind-{{.CLUSTER_NAME}}
-      - kubectl apply -f admin-user-rbac.yaml --context kind-{{.CLUSTER_NAME}}
+      - kubectl apply -f admin-user-serviceaccount.yaml --context kind-{{.NAME}}
+      - kubectl apply -f admin-user-rbac.yaml --context kind-{{.NAME}}
       - echo '- - - - - - - - - - - - - - - - - - - - - - - - - -'
-      - kubectl get -n kube-system secret $(kubectl get -n kube-system sa/admin-user -o jsonpath="{.secrets[0].name}" --context kind-{{.CLUSTER_NAME}}) -o go-template="{{.data.token | base64decode}}" --context kind-{{.CLUSTER_NAME}} | tee token-{{.CLUSTER_NAME}}.txt
+      - kubectl get -n kube-system secret $(kubectl get -n kube-system sa/admin-user -o jsonpath="{.secrets[0].name}" --context kind-{{.NAME}}) -o jsonpath="{.data.token}" --context kind-{{.NAME}} | base64 -d | tee token-{{.NAME}}.txt
       - echo
       - echo '- - - - - - - - - - - - - - - - - - - - - - - - - -'
-      - echo "Token saved to token-{{.CLUSTER_NAME}}.txt"
+      - echo "Token saved to token-{{.NAME}}.txt"
     preconditions:
       - sh: command -v kubectl
         msg: "kubectl is not installed"
     generates:
       - admin-user-serviceaccount.yaml
       - admin-user-rbac.yaml
-      - token-{{.CLUSTER_NAME}}.txt
+      - token-{{.NAME}}.txt
 
   install-dashboard:
     desc: Install Kubernetes dashboard and start proxy
     cmds:
-      - kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.3.1/aio/deploy/recommended.yaml --context kind-{{.CLUSTER_NAME}}
+      - kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.3.1/aio/deploy/recommended.yaml --context kind-{{.NAME}}
       - echo "Dashboard installed. Run 'task start-proxy' to access it."
       - |
         echo "Then go to: http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/#/login"
@@ -177,10 +199,10 @@ tasks:
   start-proxy:
     desc: Start kubectl proxy for dashboard access
     cmds:
-      - echo "Starting proxy for cluster {{.CLUSTER_NAME}}..."
+      - echo "Starting proxy for cluster {{.NAME}}..."
       - |
         echo "Dashboard will be available at: http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/#/login"
-      - kubectl proxy --context kind-{{.CLUSTER_NAME}}
+      - kubectl proxy --context kind-{{.NAME}}
     preconditions:
       - sh: command -v kubectl
         msg: "kubectl is not installed"
@@ -192,7 +214,7 @@ tasks:
         cat > {{.CONFIG_FILE}} << EOF
         kind: Cluster
         apiVersion: kind.x-k8s.io/v1alpha4
-        name: {{.CLUSTER_NAME}}
+        name: {{.NAME}}
         networking:
           ipFamily: ipv4
           apiServerAddress: {{.HOST_IP | default "192.168.1.45"}}
@@ -224,14 +246,14 @@ tasks:
     cmds:
       - task: create-cluster
       - task: create-admin-user
-      - echo "Cluster {{.CLUSTER_NAME}} is accessible at https://{{.HOST_IP | default \"192.168.1.45\"}}:{{.API_PORT | default \"45001\"}}"
-      - echo "Use the token from token-{{.CLUSTER_NAME}}.txt for authentication"
+      - echo "Cluster {{.NAME}} is accessible at https://{{.HOST_IP | default \"192.168.1.45\"}}:{{.API_PORT | default \"45001\"}}"
+      - echo "Use the token from token-{{.NAME}}.txt for authentication"
 
 # Seems Broken
   # get-connection-info:
   #   desc: Display connection information for remote access
   #   cmds:
-  #     - echo "Cluster: {{.CLUSTER_NAME}}"
-  #     - kubectl cluster-info --context kind-{{.CLUSTER_NAME}}
+  #     - echo "Cluster: {{.NAME}}"
+  #     - kubectl cluster-info --context kind-{{.NAME}}
   #     - echo "Admin token (if created):"
-  #     - cat token-{{.CLUSTER_NAME}}.txt 2>/dev/null || echo "No token file found. Run 'task create-admin-user' first."
+  #     - cat token-{{.NAME}}.txt 2>/dev/null || echo "No token file found. Run 'task create-admin-user' first."
