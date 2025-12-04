@@ -2,11 +2,28 @@ version: '3'
 
 # Basic usage
 # https://www.rootisgod.com/2021/Cheap-and-Accessible-Kubernetes-Clusters-with-KIND/
+# ---------------------------
+# TOOLS
+# ---------------------------
+# task install-kind
 # task install-tools
+# ---------------------------
+# CLUSTER MANAGEMENT
+# ---------------------------
+# task create-cluster-with-admin-and-dashboard-config NAME=iain-cluster
 # task create-cluster
+# task create-cluster -var NAME=iain-cluster
 # task setup-admin-user
+# task get-admin-token
+# task install-dashboard
+# task start-proxy
+# task cluster-info
 # task delete-cluster
 # task list-clusters
+# task add-node
+# task delete-node
+# task cluster-info
+
 vars:
   NAME: test-cluster
   CONFIG_FILE: ./cluster-config.yaml
@@ -47,10 +64,18 @@ tasks:
     status:
       - command -v k9s
 
-  install-tools:
-    desc: Install KIND, kubectl, and k9s
-    deps: [install-kubectl, install-kind, install-k9s]
+  install-helm:
+    desc: Install Helm (Kubernetes package manager)
+    cmds:
+      - curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+      - echo "Helm installed successfully!"
+      - helm version
+    status:
+      - command -v helm
 
+  install-tools:
+    desc: Install KIND, kubectl, k9s, and Helm
+    deps: [install-kubectl, install-kind, install-k9s, install-helm]
   create-cluster:
     desc: Create a KIND cluster with specified name
     cmds:
@@ -211,7 +236,10 @@ tasks:
   install-dashboard:
     desc: Install Kubernetes dashboard and start proxy
     cmds:
-      - kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.3.1/aio/deploy/recommended.yaml --context kind-{{.NAME}}
+      - helm repo add kubernetes-dashboard https://kubernetes.github.io/dashboard/
+      - helm repo update
+      - helm install kubernetes-dashboard kubernetes-dashboard/kubernetes-dashboard --namespace kube-system
+      # - kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.3.1/aio/deploy/recommended.yaml --context kind-{{.NAME}}
       - echo "Dashboard installed. Run 'task start-proxy' to access it."
       - |
         echo "Then go to: http://{{.HOST_IP}}:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/#/login"
@@ -219,14 +247,25 @@ tasks:
       - sh: command -v kubectl
         msg: "kubectl is not installed"
 
+  create-cluster-with-admin-and-dashboard-config:
+    desc: Create cluster config with admin user and dashboard setup
+    cmds:
+      - task: create-config
+      - task: create-cluster
+      - task: create-admin-user
+      - task: install-dashboard
+      - echo "Cluster {{.NAME}} created with admin user and dashboard installed."
+      - echo "Use the token from token-{{.NAME}}.txt for authentication."
+
   start-proxy:
     desc: Start kubectl proxy for dashboard access
     cmds:
       - task: get-admin-token
       - echo "Starting proxy for cluster {{.NAME}}..."
       - |
-        echo "Dashboard will be available at: http://{{.HOST_IP}}:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/#/login"
-      - kubectl proxy --context kind-{{.NAME}}
+        echo "Dashboard will be available at IP: http://{{.HOST_IP}}:443"
+        echo "Dashboard will be available or at: https://localhost:8443"
+      - kubectl -n kube-system port-forward svc/kubernetes-dashboard-kong-proxy 8443:443
     preconditions:
       - sh: command -v kubectl
         msg: "kubectl is not installed"
