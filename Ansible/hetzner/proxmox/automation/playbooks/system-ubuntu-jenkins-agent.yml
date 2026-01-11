@@ -1,0 +1,60 @@
+---
+- name: Install Jenkins Agent on Ubuntu 24.04
+  hosts: all
+  become: true
+  pre_tasks:
+    - name: Fail if not running on Ubuntu 24.04
+      fail:
+        msg: "This playbook only supports Ubuntu 24.04."
+      when: not (ansible_facts['distribution'] == "Ubuntu" and ansible_facts['distribution_major_version'] == "24")
+  tasks:
+    - name: Ensure required apt packages are installed
+      apt:
+        name:
+          - openjdk-11-jdk
+          - git
+          - curl
+          - wget
+          - unzip
+        state: present
+        update_cache: yes
+
+    - name: Create jenkins user
+      user:
+        name: jenkins
+        comment: "Jenkins Agent User"
+        shell: /bin/bash
+        create_home: yes
+
+    - name: Download Jenkins agent jar
+      get_url:
+        url: "http://your-jenkins-server:8080/jnlpJars/agent.jar"
+        dest: /home/jenkins/agent.jar
+        mode: '0755'
+        owner: jenkins
+        group: jenkins
+
+    - name: Create systemd service for Jenkins agent
+      copy:
+        dest: /etc/systemd/system/jenkins-agent.service
+        content: |
+          [Unit]
+          Description=Jenkins Agent
+          After=network.target
+
+          [Service]
+          User=jenkins
+          WorkingDirectory=/home/jenkins
+          ExecStart=/usr/bin/java -jar /home/jenkins/agent.jar -jnlpUrl http://your-jenkins-server:8080/computer/your-agent-name/slave-agent.jnlp -secret your-agent-secret
+          Restart=always
+
+          [Install]
+          WantedBy=multi-user.target
+      notify:
+        - Reload systemd
+
+    - name: Enable and start Jenkins agent service
+      systemd:
+        name: jenkins-agent.service
+        enabled: yes
+        state: started

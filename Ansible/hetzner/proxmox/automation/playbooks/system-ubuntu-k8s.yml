@@ -1,5 +1,5 @@
 ---
-- name: Install Docker and Docker Compose on Debian Trixie
+- name: Install Docker and Docker Compose on Ubuntu 24.04
   hosts: all
   become: true
   pre_tasks:
