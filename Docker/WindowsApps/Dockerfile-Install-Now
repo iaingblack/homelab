@@ -1,0 +1,37 @@
+# escape=`
+
+# NOT SURE THIS WORKS - NOT TESTED
+
+FROM mcr.microsoft.com/windows/servercore:ltsc2022
+
+# Optional: make errors stop the build early
+SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
+
+# Copy your tiny installer into the image
+# (put TinyTestSetup.exe next to your Dockerfile)
+COPY TinyTestSetup.exe C:\install\TinyTestSetup.exe
+
+# ────────────────────────────────────────────────
+# Example 1: Silent install → custom dir + feature flag
+# ────────────────────────────────────────────────
+RUN Start-Process -FilePath 'C:\install\TinyTestSetup.exe' `
+    -ArgumentList '/S', '/DIR=C:\Custom\ToyApp', '/FEATUREX' `
+    -Wait -NoNewWindow -PassThru | `
+    ForEach-Object { if ($_.ExitCode -ne 0) { throw "Install failed with exit code $($_.ExitCode)" } }
+
+# ────────────────────────────────────────────────
+# Example 2: Silent install → only custom dir (no feature)
+# ────────────────────────────────────────────────
+# RUN Start-Process -FilePath 'C:\install\TinyTestSetup.exe' `
+#     -ArgumentList '/S', '/DIR=C:\Apps\SilentOnly' `
+#     -Wait -NoNewWindow -PassThru | ...
+#     (uncomment if you want to test multiple variants in one image)
+
+# Optional: clean up installer after use (saves ~50 KB)
+RUN Remove-Item -Path 'C:\install\TinyTestSetup.exe' -Force
+
+# Just so you can inspect what happened
+RUN Get-Content 'C:\Custom\ToyApp\installed.txt' -ErrorAction SilentlyContinue
+
+# Or set this as the entrypoint if you want to run something after install
+# CMD ["powershell.exe"]
