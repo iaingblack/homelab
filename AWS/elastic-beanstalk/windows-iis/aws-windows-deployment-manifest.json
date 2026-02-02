@@ -1,0 +1,16 @@
+{
+  "manifestVersion": 1,
+  "deployments": {
+    "msDeploy": [
+      {
+        "name": "StaticHtmlApp",
+        "parameters": {
+          "appBundle": "static-site.zip",
+          "iisWebSite": "Default Web Site",
+          "iisPath": "/",
+          "appPool": "DefaultAppPool"
+        }
+      }
+    ]
+  }
+}
