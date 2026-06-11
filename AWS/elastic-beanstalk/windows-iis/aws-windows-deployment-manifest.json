@@ -1,14 +1,15 @@
 {
   "manifestVersion": 1,
   "deployments": {
-    "msDeploy": [
+    "aspNetCoreWeb": [
       {
-        "name": "StaticHtmlApp",
+        "name": "iis-web-app",
         "parameters": {
-          "appBundle": "static-site.zip",
-          "iisWebSite": "Default Web Site",
-          "iisPath": "/",
-          "appPool": "DefaultAppPool"
+          "iisPath": "/"
+        },
+        "msdeployParameters": {
+          "xmlAppConfigTransforms": "content/app.config.xhtml23cWeb.config",
+          "xmlAppConfigFilename": "web.config"
         }
       }
     ]

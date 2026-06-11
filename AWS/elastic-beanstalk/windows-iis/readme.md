@@ -7,3 +7,7 @@ cd ..
 zip -r my-test-app.zip aws-windows-deployment-manifest.json static-site.zip .ebextensions/
 
 Deploy to AWS
+
+zip -r my-test-app.zip Release/ .ebextensions/
+
+zip -r my-test-app.zip site/ .ebextensions/
