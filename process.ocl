@@ -1,0 +1,282 @@
+step "deploy-elink" {
+    name = "Deploy ELink"
+    properties = {
+        Octopus.Action.TargetRoles = "ALL"
+    }
+
+    action {
+        action_type = "Octopus.TentaclePackage"
+        properties = {
+            Octopus.Action.EnabledFeatures = "Octopus.Features.ConfigurationVariables,Octopus.Features.ConfigurationTransforms"
+            Octopus.Action.Package.AutomaticallyRunConfigurationTransformationFiles = "True"
+            Octopus.Action.Package.AutomaticallyUpdateAppSettingsAndConnectionStrings = "True"
+            Octopus.Action.Package.DownloadOnTentacle = "False"
+            Octopus.Action.Package.FeedId = "octopus-server-built-in"
+            Octopus.Action.Package.PackageId = "ELinkSetup"
+        }
+        worker_pool_variable = ""
+
+        packages {
+            acquisition_location = "Server"
+            feed = "octopus-server-built-in"
+            package_id = "ELinkSetup"
+            properties = {
+                SelectionMode = "immediate"
+            }
+        }
+    }
+}
+
+step "create-elink-and-data-folders-and-set-permissions" {
+    name = "Create ELINK and DATA Folders and Set Permissions"
+    properties = {
+        Octopus.Action.TargetRoles = "ALL"
+    }
+
+    action {
+        action_type = "Octopus.Script"
+        properties = {
+            Octopus.Action.RunOnServer = "false"
+            Octopus.Action.Script.ScriptBody = <<-EOT
+                # Octopus Variables
+                $Drive       = $ELINK_and_DATA_Drive
+                $admin_group = $axis_admins_group_name
+                $user_group  = $axis_users_group_name
+                
+                # Initial Checks
+                if ([string]::IsNullOrWhiteSpace($Drive)) {
+                    throw "Variable 'ELINK_and_DATA_Drive' is not set."
+                }
+                if ([string]::IsNullOrWhiteSpace($admin_group)) {
+                    throw "Variable 'axis_admins_group_name' is not set."
+                }
+                if ([string]::IsNullOrWhiteSpace($user_group)) {
+                    throw "Variable 'axis_users_group_name' is not set."
+                }
+                
+                # -------------------------------
+                # Create Required Folders
+                $folders = @(
+                    "$Drive\DATA",
+                    "$Drive\DATA\BACKUP",
+                    "$Drive\DATA\VC",
+                    "$Drive\DATA\WA1",
+                    "$Drive\DATA\WA2",
+                    "$Drive\ELINK",
+                    "$Drive\ELINK\AXIS_VERSIONS",
+                    "$Drive\ELINK\EXECUTABLES",
+                    "$Drive\ELINK\SERVICE",
+                    "$Drive\ELINK\SPARE",
+                    "$Drive\ELINK\TEMP"
+                )
+                
+                foreach ($folder in $folders) {
+                    if (-not (Test-Path $folder)) {
+                        New-Item -Path $folder -ItemType Directory | Out-Null
+                        Write-Host "Created: $folder"
+                    } else {
+                        Write-Host "Already exists: $folder"
+                    }
+                }
+                
+                
+                # ===============================================
+                # Setup ELINK folder share and permissions
+                $FolderPath = "$Drive\ELINK"
+                if (-not (Test-Path $FolderPath)) {
+                    throw "Path not found: $FolderPath"
+                }
+                
+                # -----------------------------------------------
+                # Set permissions on ELINK folder for AXIS_ADMINS
+                $acl = Get-Acl $FolderPath
+                $rule = New-Object System.Security.AccessControl.FileSystemAccessRule(
+                    $admin_group,
+                    "FullControl",
+                    "ContainerInherit,ObjectInherit",
+                    "None",
+                    "Allow"
+                )
+                $acl.AddAccessRule($rule)
+                Set-Acl -Path $FolderPath -AclObject $acl
+                Write-Host "Granted Full Control on $FolderPath (and subfolders/files) to $admin_group"
+                
+                # -----------------------------------------------
+                # Set permissions on ELINK folder for AXIS_USERS
+                $acl = Get-Acl $FolderPath
+                $rule = New-Object System.Security.AccessControl.FileSystemAccessRule(
+                    $user_group,
+                    "Modify",
+                    "ContainerInherit,ObjectInherit",
+                    "None",
+                    "Allow"
+                )
+                $acl.AddAccessRule($rule)
+                Set-Acl -Path $FolderPath -AclObject $acl
+                Write-Host "Granted Modify on $FolderPath (and subfolders/files) to $user_group"
+                
+                # -----------------------------------------------
+                # Setup the ELINK share
+                $ShareName  = "elink"
+                
+                # Remove existing share of the same name, if present, so this script is re-runnable
+                if (Get-SmbShare -Name $ShareName -ErrorAction SilentlyContinue) {
+                    Remove-SmbShare -Name $ShareName -Force
+                }
+                
+                New-SmbShare -Name $ShareName -Path $FolderPath `
+                    -FullAccess "Administrators" `
+                    -ChangeAccess $admin_group, $user_group
+                
+                Write-Host "Share '$ShareName' created for $FolderPath"
+                Get-SmbShareAccess -Name $ShareName
+                
+                
+                # ===============================================
+                # Setup DATA folder share and permissions
+                $FolderPath = "$Drive\DATA"
+                if (-not (Test-Path $FolderPath)) {
+                    throw "Path not found: $FolderPath"
+                }
+                
+                # -----------------------------------------------
+                # Set permissions on DATA folder for AXIS_ADMINS
+                $acl = Get-Acl $FolderPath
+                $rule = New-Object System.Security.AccessControl.FileSystemAccessRule(
+                    $admin_group,
+                    "FullControl",
+                    "ContainerInherit,ObjectInherit",
+                    "None",
+                    "Allow"
+                )
+                $acl.AddAccessRule($rule)
+                Set-Acl -Path $FolderPath -AclObject $acl
+                Write-Host "Granted Full Control on $FolderPath (and subfolders/files) to $admin_group"
+                
+                # -----------------------------------------------
+                # Setup the DATA share
+                $ShareName  = "data"
+                
+                # Remove existing share of the same name, if present, so this script is re-runnable
+                if (Get-SmbShare -Name $ShareName -ErrorAction SilentlyContinue) {
+                    Remove-SmbShare -Name $ShareName -Force
+                }
+                
+                New-SmbShare -Name $ShareName -Path $FolderPath `
+                    -FullAccess "Everyone"
+                
+                Write-Host "Share '$ShareName' created for $FolderPath"
+                Get-SmbShareAccess -Name $ShareName
+                EOT
+            Octopus.Action.Script.ScriptSource = "Inline"
+            Octopus.Action.Script.Syntax = "PowerShell"
+            OctopusUseBundledTooling = "False"
+        }
+        worker_pool_variable = ""
+    }
+}
+
+step "disable-user-account-control-run-all-administrators-in-admin-approval-mode-lua" {
+    name = "Disable User Account Control - Run all administrators in Admin Approval Mode (LUA)"
+    properties = {
+        Octopus.Action.TargetRoles = "ALL"
+    }
+
+    action {
+        action_type = "Octopus.Script"
+        properties = {
+            Octopus.Action.RunOnServer = "false"
+            Octopus.Action.Script.ScriptBody = <<-EOT
+                # GPOs likely take care of this, but adding so it is a known step to complete
+                Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -Name "EnableLUA" -Value 0 -Type DWord
+                Write-Host "EnableLUA Set to False"
+                EOT
+            Octopus.Action.Script.ScriptSource = "Inline"
+            Octopus.Action.Script.Syntax = "PowerShell"
+            OctopusUseBundledTooling = "False"
+        }
+        worker_pool_variable = ""
+    }
+}
+
+step "add-elink-service-user-to-local-administrators-group" {
+    name = "Add elink_service user to Local Administrators Group"
+    properties = {
+        Octopus.Action.TargetRoles = "ALL"
+    }
+
+    action {
+        action_type = "Octopus.Script"
+        properties = {
+            Octopus.Action.RunOnServer = "false"
+            Octopus.Action.Script.ScriptBody = <<-EOT
+                $group = "Administrators"
+                $user  = "TORONTO\elink-service"
+                
+                if (-not (Get-LocalGroupMember -Group $group | Where-Object { $_.Name -eq $user })) {
+                    Add-LocalGroupMember -Group $group -Member $user
+                    Write-Host "$user added to $group."
+                } else {
+                    Write-Host "$user is already a member of $group."
+                }
+                EOT
+            Octopus.Action.Script.ScriptSource = "Inline"
+            Octopus.Action.Script.Syntax = "PowerShell"
+            OctopusUseBundledTooling = "False"
+        }
+        worker_pool_variable = ""
+    }
+}
+
+step "install-elink" {
+    name = "Install ELink"
+    properties = {
+        Octopus.Action.TargetRoles = "ALL"
+    }
+
+    action {
+        action_type = "Octopus.Script"
+        properties = {
+            Octopus.Action.RunOnServer = "false"
+            Octopus.Action.Script.ScriptBody = <<-EOT
+                $axisVersionsPath  = "C:\AxisVersions"
+                $axisComponentsExe = "C:\ELINK\DEPLOYMENT\AXISComponents.exe"
+                
+                # --- Resolve ELinkSetup installer from the Octopus package step ---
+                $installPath = $OctopusParameters["Octopus.Action[Deploy ELink].Output.Octopus.Action.Package.InstallationDirectoryPath"]
+                
+                Write-Host "Install Path: $installPath"
+                
+                $installerFile = Get-ChildItem -Path $installPath -Filter "ELINKSETUP*.exe" -File | Select-Object -First 1
+                
+                if (-not $installerFile) {
+                    Write-Host "Contents of ${installPath}:"
+                    Get-ChildItem -Path $installPath -Recurse | ForEach-Object { Write-Host $_.FullName }
+                    throw "No ELINKSETUP*.exe file found in $installPath"
+                }
+                
+                $fullPath = $installerFile.FullName
+                Write-Host "Full Path: $fullPath"
+                
+                # --- Install Axis Components ---
+                Start-Process -FilePath $fullPath -ArgumentList '-s -a -sc' -Wait
+                Write-Host "Installed ELinkSetup - AxisComponents.exe available at C:\ELINK\DEPLOYMENT\AxisComponents.exe"
+                
+                # --- Create AxisVersions folder with RWX permissions for Everyone ---
+                New-Item -Path $axisVersionsPath -ItemType Directory -Force | Out-Null
+                Start-Process -FilePath "icacls.exe" -ArgumentList "`"$axisVersionsPath`" /grant Everyone:(OI)(CI)F /T" -Wait
+                
+                # --- Silent install AxisComponents to C:\AxisVersions ---
+                # Silent install (components only, no AXISCommon path): AXISComponents.exe 8
+                Start-Process -FilePath $axisComponentsExe -ArgumentList "/sc`"$axisVersionsPath`"" -Wait
+                
+                Write-Host "AxisComponents installed to $axisVersionsPath"
+                
+                EOT
+            Octopus.Action.Script.ScriptSource = "Inline"
+            Octopus.Action.Script.Syntax = "PowerShell"
+            OctopusUseBundledTooling = "False"
+        }
+        worker_pool_variable = ""
+    }
+}
