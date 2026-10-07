@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - Project/ExchangeLiquidityCountdown/**
+  pull_request:
+    branches:
+      - master
+    paths:
+      - Project/ExchangeLiquidityCountdown/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  countdown:
+    # Do not run untrusted fork pull requests on a persistent self-hosted runner.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on:
+      - self-hosted
+      - linux
+    container:
+      image: ghcr.io/iaingblack/homelab-ci:v1
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    defaults:
+      run:
+        shell: bash
+        working-directory: Project/ExchangeLiquidityCountdown
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Install application dependencies
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Build deployment archive
+        run: zip -r /tmp/exchange-liquidity-countdown.zip .
+
+      - name: Check dependencies and Python syntax
+        run: |
+          source venv/bin/activate
+          python -m pip check
+          python -m compileall -q main.py "main copy.py" hello.py
