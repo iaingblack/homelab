@@ -3,4 +3,4 @@ Homelab config files
 
 ## CI
 
-CI runner, remote Docker Engine, GHCR image, and bootstrap instructions are in [docs/ci.md](docs/ci.md).
+Self-hosted CI runner, its local Docker Engine, GHCR image, and bootstrap instructions are in [docs/ci.md](docs/ci.md).

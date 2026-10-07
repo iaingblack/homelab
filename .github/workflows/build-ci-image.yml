@@ -3,11 +3,11 @@ name: Build CI image
 on:
   push:
     paths:
-      - build/ci/Dockerfile
+      - build/ci/**
       - .github/workflows/build-ci-image.yml
   pull_request:
     paths:
-      - build/ci/Dockerfile
+      - build/ci/**
       - .github/workflows/build-ci-image.yml
   workflow_dispatch:
     inputs:
