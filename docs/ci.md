@@ -4,17 +4,62 @@ The repository is a collection of homelab configurations and standalone projects
 
 The main CI workflow runs for changes to `Project/ExchangeLiquidityCountdown/**` on `master`, same-repository pull requests targeting `master`, and manual dispatch. Fork pull requests are skipped so untrusted code does not run on the persistent self-hosted runner. The existing Azure build and deployment workflow remains separate.
 
-## Self-hosted runner and Docker
+## Set up the self-hosted Docker VM
 
-The main CI job expects a self-hosted Linux runner with the labels `self-hosted` and `linux`. Install the GitHub Actions runner and Docker Engine on your Linux VM. The runner starts the job container through that VM's Docker Engine, so the runner service account must be able to run Docker commands without `sudo` (for a standard rootful Docker installation, this usually means adding that account to the `docker` group).
+The Linux VM hosts two things directly: the GitHub Actions runner service and Docker Engine. When a workflow job declares `container:`, the runner asks the VM's Docker Engine to pull and start the job image. The CI image does not run its own Docker daemon. Your development workstation does not need Docker, and the VM's Docker API does not need to be exposed over the network.
 
-The development workstation does not need Docker. On the runner VM, keep Docker Engine running and leave the CLI pointed at its local daemon (`unix:///var/run/docker.sock` by default). No Docker API port needs to be exposed to the network.
+### Prepare Docker Engine on the VM
 
-Keep the GitHub Actions runner software current. The workflow uses current Node.js 24 actions, which require runner version 2.327.1 or newer.
+Install Docker Engine using the instructions for the VM's Linux distribution, then enable it at boot:
 
-The job runs inside a custom image from GHCR. The Dockerfile is [build/ci/Dockerfile](../build/ci/Dockerfile); the package is `ghcr.io/iaingblack/homelab-ci`. It contains Python 3.12, Bash, Git, `zip`, OpenSSH client tools, Ansible Core 2.21.5, `ansible-lint` 26.9.0, `yamllint` 1.38.0, Terraform 1.13.0 managed by `tfenv`, Packer 1.16.1, Task 3.53.1, `kubectl` 1.37.1, and Helm 3.22.0. The Terraform pin matches the repository's Terraform Taskfiles. Ansible collections are not bundled; install the collections each playbook needs with `ansible-galaxy`. The GitHub Actions runner is installed on the VM, and that VM's Docker Engine starts the job container.
+```bash
+sudo systemctl enable --now docker
+```
 
-The image is a focused set of command-line tools for the repository's Python, Ansible, Terraform, Packer, Taskfile, and Kubernetes projects. It does not include cloud provider CLIs or a Docker daemon; add cloud authentication and Docker socket access only to workflows that need them.
+Use the local Docker socket (`unix:///var/run/docker.sock` by default) and leave `DOCKER_HOST` unset. The Linux account that runs the Actions runner service must be able to use Docker without `sudo`. For a standard rootful Docker installation, add that account to the `docker` group:
+
+```bash
+sudo usermod -aG docker <runner-user>
+```
+
+Restart the runner service after changing group membership so it picks up the new permission. Check Docker access as the runner account:
+
+```bash
+sudo -u <runner-user> docker info
+```
+
+Membership in the `docker` group grants powerful control of the VM. Only allow trusted repositories and workflows to use this runner.
+
+### Register the GitHub Actions runner
+
+1. In this repository on GitHub, open **Settings → Actions → Runners → New self-hosted runner**. Choose Linux and the VM's processor architecture.
+2. Follow GitHub's generated commands on the VM to download and extract the runner application. Keep the runner in its own directory, such as `~/actions-runner`.
+3. Run the generated `config.sh` command for `https://github.com/iaingblack/homelab`. Use the temporary registration token promptly; it expires and should not be saved in the repository.
+4. Keep the default `self-hosted` and `linux` labels. The main job routes with `runs-on: [self-hosted, linux]`.
+
+GitHub documents [adding a self-hosted runner](https://docs.github.com/en/actions/how-tos/manage-runners/self-hosted-runners/add-runners) and provides the current runner download and configuration commands in the repository settings page.
+
+### Run the runner as a service
+
+From the runner installation directory, install and start the service:
+
+```bash
+sudo ./svc.sh install
+sudo ./svc.sh start
+sudo ./svc.sh status
+```
+
+On Linux with systemd, installing the service configures the runner to start when the VM boots. Check **Settings → Actions → Runners** and confirm the runner is **Idle**. GitHub's [service instructions](https://docs.github.com/en/actions/how-tos/manage-runners/self-hosted-runners/configure-the-application?platform=linux) also cover stopping and removing the service.
+
+Keep the runner application current. The workflows use Node.js 24 actions and require runner version 2.327.1 or newer. The runner VM also needs outbound HTTPS access to GitHub and GHCR so it can receive jobs and pull the private CI image.
+
+### What runs inside the job container
+
+The main CI job uses the labels `self-hosted` and `linux`, then runs inside `ghcr.io/iaingblack/homelab-ci:v1`. The Dockerfile is [build/ci/Dockerfile](../build/ci/Dockerfile). It contains Python 3.12, Bash, Git, `zip`, OpenSSH client tools, Ansible Core 2.21.5, `ansible-lint` 26.9.0, `yamllint` 1.38.0, Terraform 1.13.0 managed by `tfenv`, Packer 1.16.1, Task 3.53.1, `kubectl` 1.37.1, and Helm 3.22.0. The Terraform pin matches the repository's Terraform Taskfiles. Ansible collections are not bundled; install the collections each playbook needs with `ansible-galaxy`.
+
+The job uses `GITHUB_TOKEN` to pull the private GHCR package. The runner VM's Docker Engine performs that pull and starts the container. The image does not include a Docker daemon or cloud provider CLIs. Workflows that need to run Docker commands inside the container must separately provide a Docker client and access to the VM's socket.
+
+This runner is registered to the `homelab` repository. Repository-level runners serve one repository; sharing one registration across repositories requires registering it at organization scope and granting those repositories access. See [GitHub's runner access guidance](https://docs.github.com/en/actions/how-tos/manage-runners/self-hosted-runners/manage-access).
 
 ## Build, bootstrap, and version the image
 
