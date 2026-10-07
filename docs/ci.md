@@ -4,23 +4,15 @@ The repository is a collection of homelab configurations and standalone projects
 
 The main CI workflow runs for changes to `Project/ExchangeLiquidityCountdown/**` on `master`, same-repository pull requests targeting `master`, and manual dispatch. Fork pull requests are skipped so untrusted code does not run on the persistent self-hosted runner. The existing Azure build and deployment workflow remains separate.
 
-## Runner and remote Docker Engine
+## Self-hosted runner and Docker
 
-The main CI job expects a self-hosted Linux runner with the labels `self-hosted` and `linux`. The runner host needs the Docker CLI and a connection to a Docker Engine on a separate Linux machine. Configure the runner service environment to point the CLI at that engine, for example:
+The main CI job expects a self-hosted Linux runner with the labels `self-hosted` and `linux`. Install the GitHub Actions runner and Docker Engine on your Linux VM. The runner starts the job container through that VM's Docker Engine, so the runner service account must be able to run Docker commands without `sudo` (for a standard rootful Docker installation, this usually means adding that account to the `docker` group).
 
-```sh
-DOCKER_HOST=tcp://docker-engine.example:2376
-DOCKER_TLS_VERIFY=1
-DOCKER_CERT_PATH=/path/to/docker-client-certs
-```
-
-Use TLS client authentication and restrict the Engine API port to the runner host. Do not expose an unauthenticated Docker API. The runner service account needs permission to use the Docker CLI and read its client certificates.
+The development workstation does not need Docker. On the runner VM, keep Docker Engine running and leave the CLI pointed at its local daemon (`unix:///var/run/docker.sock` by default). No Docker API port needs to be exposed to the network.
 
 Keep the GitHub Actions runner software current. The workflow uses current Node.js 24 actions, which require runner version 2.327.1 or newer.
 
-GitHub Actions creates the job container through the Docker Engine and bind-mounts the runner's work directory into it. Since the Engine is remote, make the runner's entire `_work` directory (including temporary work files) available to the Engine machine at the same absolute path. Without that shared path, the remote Engine cannot see the checked-out repository and job files.
-
-The job runs inside a custom image from GHCR. The Dockerfile is [build/ci/Dockerfile](../build/ci/Dockerfile); the package is `ghcr.io/iaingblack/homelab-ci`. This CI image contains Python 3.12, Bash, Git, CA certificates, and `zip`. The runner itself and the CI image are separate: the runner connects to the remote Engine, and the remote Engine starts the job container.
+The job runs inside a custom image from GHCR. The Dockerfile is [build/ci/Dockerfile](../build/ci/Dockerfile); the package is `ghcr.io/iaingblack/homelab-ci`. This CI image contains Python 3.12, Bash, Git, CA certificates, and `zip`. The GitHub Actions runner is installed on the VM, and that VM's Docker Engine starts the job container.
 
 ## Build, bootstrap, and version the image
 
