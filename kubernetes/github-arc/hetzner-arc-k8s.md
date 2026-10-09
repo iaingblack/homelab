@@ -2,14 +2,22 @@
 
 This guide installs a small Kubernetes cluster with **KIND** on a Hetzner-hosted Ubuntu server, installs **GitHub Actions Runner Controller (ARC)**, and registers an **organization-level runner scale set**.
 
-Replace the example values and export these two variables before connecting to the server:
+Replace the example values before starting. Export the environment-specific values before connecting, then export all four values again in the VM shell; SSH does not pass local shell variables to the remote session automatically.
 
 ```bash
 export HETZNER_PUBLIC_IP="<server-public-ip>"
 export GITHUB_ORG="<github-organization>"
+export KIND_VERSION="v0.33.0"
+export ARC_CHART_VERSION="0.15.0"
 ```
 
-After connecting, export the same values in the VM shell before running the configuration-generation commands. SSH does not pass local shell variables to the remote session automatically.
+The tool pins above were checked on 2026-10-09. Check the upstream release pages before a new install and change the value in this block when you want another release:
+
+- `KIND_VERSION`: [KIND releases](https://github.com/kubernetes-sigs/kind/releases). Use the release tag, including the `v` prefix. `v0.33.0` was the latest release when checked.
+- `ARC_CHART_VERSION`: [ARC releases](https://github.com/actions/actions-runner-controller/releases). Use the numeric chart version at the end of the `gha-runner-scale-set-*` release tag. `0.15.0` was the latest release when checked; both ARC charts use this version.
+- `actions/checkout` in the example workflows: [checkout releases](https://github.com/actions/checkout/releases). The example uses the current major reference, `@v7` (latest release `v7.0.1` when checked).
+
+The Snap package versions and channel links are listed in the install section below. Snap packages follow their selected channel rather than these version variables.
 
 - **Server name:** `hetzner-arc-k8s`
 - **Public IP:** `$HETZNER_PUBLIC_IP`
@@ -127,6 +135,16 @@ snap install helm --classic
 snap install kubectl --classic
 ```
 
+These commands use each package's default `latest/stable` channel. The current channel version can change independently of this guide. As checked on 2026-10-09:
+
+| Snap package | `latest/stable` version | Version and channel page |
+| --- | --- | --- |
+| Docker | `29.8.0` | [Snap Store: Docker](https://snapcraft.io/docker) |
+| Helm | `4.3.0` | [Snap Store: Helm](https://snapcraft.io/helm) |
+| kubectl | `1.36.3` | [Snap Store: kubectl](https://snapcraft.io/kubectl) |
+
+The Docker Snap is published by Canonical, and the Helm Snap is maintained by Snapcrafters. If you need a particular upstream build, use the package's listed channel or its upstream installation instructions.
+
 Check them:
 
 ```bash
@@ -145,13 +163,13 @@ docker run --rm hello-world
 
 ## 4. Install KIND
 
-At the time this guide was written, KIND `v0.33.0` was the current stable release.
+The KIND version is set by `KIND_VERSION` near the top of this guide. Check the [KIND releases](https://github.com/kubernetes-sigs/kind/releases) page when choosing a newer version.
 
 Install the AMD64 binary:
 
 ```bash
 curl -Lo ./kind \
-  https://kind.sigs.k8s.io/dl/v0.33.0/kind-linux-amd64
+  "https://kind.sigs.k8s.io/dl/${KIND_VERSION}/kind-linux-amd64"
 
 chmod +x ./kind
 
@@ -168,7 +186,7 @@ For ARM64 instead, use:
 
 ```bash
 curl -Lo ./kind \
-  https://kind.sigs.k8s.io/dl/v0.33.0/kind-linux-arm64
+  "https://kind.sigs.k8s.io/dl/${KIND_VERSION}/kind-linux-arm64"
 ```
 
 Current KIND releases:
@@ -428,6 +446,7 @@ Install the controller:
 ```bash
 helm install arc \
   --namespace arc-systems \
+  --version "${ARC_CHART_VERSION}" \
   oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set-controller
 ```
 
@@ -604,6 +623,7 @@ Install it:
 ```bash
 helm install hetzner-arc-k8s \
   --namespace arc-runners \
+  --version "${ARC_CHART_VERSION}" \
   -f /opt/hetzner-arc-k8s/arc-values.yaml \
   oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set
 ```
@@ -832,7 +852,7 @@ jobs:
       image: ghcr.io/<GITHUB_ORG>/ci-tools:1.0.0
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Build
         run: ./build.sh
@@ -942,30 +962,15 @@ kubectl logs \
 
 # 20. Updating ARC
 
-Check the installed charts:
+Check the installed versions:
 
 ```bash
 helm list -A
 ```
 
-Update the controller:
+Check the [ARC release page](https://github.com/actions/actions-runner-controller/releases) and update `ARC_CHART_VERSION` near the top of this guide before reinstalling. Use the same chart version for the controller and runner scale set.
 
-```bash
-helm upgrade arc \
-  --namespace arc-systems \
-  oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set-controller
-```
-
-Update the runner scale set:
-
-```bash
-helm upgrade hetzner-arc-k8s \
-  --namespace arc-runners \
-  -f /opt/hetzner-arc-k8s/arc-values.yaml \
-  oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set
-```
-
-Always review ARC release notes and chart changes before upgrading production infrastructure.
+ARC upgrades need more care than a direct `helm upgrade`: GitHub's [ARC upgrade guidance](https://docs.github.com/en/actions/how-tos/manage-runners/use-actions-runner-controller/deploy-runner-scale-sets#upgrading-arc) calls for uninstalling the scale sets and controller, handling changed CRDs, then reinstalling. Review the release notes and follow that procedure; use the version-pinned install commands in sections 9 and 13.
 
 ---
 
@@ -1142,9 +1147,52 @@ jobs:
       image: debian:stable-slim
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: echo "Hello from hetzner-arc-k8s"
 ```
+
+---
+
+# 26. Updating installed tools
+
+## Docker, Helm and kubectl Snaps
+
+Check the installed version with `snap list` and the published versions/channels with `snap info`:
+
+```bash
+snap list docker helm kubectl
+snap info docker
+snap info helm
+snap info kubectl
+```
+
+Refresh the installed packages from their currently selected channels:
+
+```bash
+sudo snap refresh docker helm kubectl
+```
+
+Verify the versions afterward:
+
+```bash
+docker --version
+helm version --short
+kubectl version --client
+```
+
+To choose a different Snap track or channel, first check the available values in `snap info`, then pass one of them with `--channel` (for example, `sudo snap refresh helm --channel=3/stable` to select Helm's 3.x track when that channel is listed). A Snap channel selects a release stream; it does not pin an arbitrary upstream patch version. Follow the upstream installation guide if you need an exact version outside the channels offered by the Snap package.
+
+## Updating Helm's client version
+
+This guide installs Helm from Snap, so update it with `sudo snap refresh helm` and check it with `helm version --short`. This updates the Helm client. It does not change the ARC chart version; update `ARC_CHART_VERSION` separately and follow the ARC upgrade procedure in section 20. For other installation methods, use the [Helm installation guide](https://helm.sh/docs/intro/install/) and [Helm releases](https://github.com/helm/helm/releases).
+
+## Updating the KIND version
+
+Set `KIND_VERSION` near the top to a release tag from the [KIND releases page](https://github.com/kubernetes-sigs/kind/releases), then rerun the download and install commands in section 4. Confirm the installed client with `kind version`.
+
+Updating the KIND executable does not change the Kubernetes version in an existing cluster. To create a cluster with a different Kubernetes version, select the matching `kindest/node` image and digest from the release notes and use it in the cluster configuration. See the [KIND quick start](https://kind.sigs.k8s.io/docs/user/quick-start/) and [configuration guide](https://kind.sigs.k8s.io/docs/user/configuration/).
+
+The example workflows use floating container tags such as `debian:stable-slim` and `alpine:latest`. They follow their image publishers' current tags; see the [Debian image tags](https://hub.docker.com/_/debian) and [Alpine image tags](https://hub.docker.com/_/alpine), and replace the tag with a specific version or digest when you need repeatable test environments. The `ghcr.io/<GITHUB_ORG>/ci-tools:1.0.0` value is an example and should match the image tag you publish.
 
 ---
 
