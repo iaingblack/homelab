@@ -185,7 +185,7 @@
           - /snap/bin/kubectl
           - apply
           - -f
-          - -
+          - "-"
         stdin: |
           apiVersion: v1
           kind: Namespace
@@ -200,7 +200,7 @@
           - /snap/bin/kubectl
           - apply
           - -f
-          - -
+          - "-"
         stdin: |
           apiVersion: v1
           kind: Namespace
@@ -273,7 +273,7 @@
           - /snap/bin/kubectl
           - apply
           - -f
-          - -
+          - "-"
         stdin: |
           apiVersion: v1
           kind: Secret
