@@ -1,0 +1,350 @@
+---
+- name: Add the Hetzner VM to the in-memory inventory
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    - vars.yml
+  tasks:
+    - name: Check required configuration values
+      ansible.builtin.assert:
+        that:
+          - hetzner_public_ip | length > 0
+          - hetzner_public_ip != "REPLACE_WITH_SERVER_IP"
+          - github_org | length > 0
+          - github_org != "REPLACE_WITH_GITHUB_ORG"
+          - kind_api_server_port | int > 0
+          - min_runners | int >= 0
+          - max_runners | int > 0
+          - min_runners | int <= max_runners | int
+        fail_msg: Edit vars.yml with the VM, GitHub organization, and runner settings before running this playbook.
+
+    - name: Register the Hetzner VM
+      ansible.builtin.add_host:
+        name: hetzner_arc_vm
+        groups: hetzner_arc_hosts
+        ansible_host: "{{ hetzner_public_ip }}"
+        ansible_user: "{{ ssh_user }}"
+        ansible_port: "{{ ssh_port | default(22) }}"
+        ansible_ssh_private_key_file: "{{ ssh_private_key_file | default(omit) }}"
+        ansible_python_interpreter: /usr/bin/python3
+
+- name: Install KIND and GitHub Actions Runner Controller
+  hosts: hetzner_arc_hosts
+  become: true
+  gather_facts: true
+  vars_files:
+    - vars.yml
+  vars:
+    kind_arch_by_platform:
+      x86_64: amd64
+      aarch64: arm64
+  pre_tasks:
+    - name: Require Ubuntu
+      ansible.builtin.assert:
+        that:
+          - ansible_facts.distribution == "Ubuntu"
+        fail_msg: This playbook currently supports Ubuntu hosts.
+
+    - name: Require a KIND-supported CPU architecture
+      ansible.builtin.assert:
+        that:
+          - ansible_facts.architecture in kind_arch_by_platform
+        fail_msg: "Unsupported architecture {{ ansible_facts.architecture }}; use x86_64 or aarch64."
+
+  tasks:
+    - name: Update apt package metadata and install prerequisites
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+        name:
+          - ca-certificates
+          - curl
+          - git
+          - jq
+          - snapd
+        state: present
+
+    - name: Install Docker from Snap
+      ansible.builtin.command:
+        argv:
+          - snap
+          - install
+          - docker
+          - --classic
+          - --channel={{ docker_snap_channel }}
+        creates: /snap/bin/docker
+
+    - name: Install Helm from Snap
+      ansible.builtin.command:
+        argv:
+          - snap
+          - install
+          - helm
+          - --classic
+          - --channel={{ helm_snap_channel }}
+        creates: /snap/bin/helm
+
+    - name: Install kubectl from Snap
+      ansible.builtin.command:
+        argv:
+          - snap
+          - install
+          - kubectl
+          - --classic
+          - --channel={{ kubectl_snap_channel }}
+        creates: /snap/bin/kubectl
+
+    - name: Wait for Docker to become ready
+      ansible.builtin.command:
+        argv:
+          - /snap/bin/docker
+          - info
+      register: docker_info
+      changed_when: false
+      retries: 12
+      delay: 5
+      until: docker_info.rc == 0
+
+    - name: Create the KIND installation directory
+      ansible.builtin.file:
+        path: /usr/local/lib/kind
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Download the selected KIND version
+      ansible.builtin.get_url:
+        url: "https://kind.sigs.k8s.io/dl/{{ kind_version }}/kind-linux-{{ kind_arch_by_platform[ansible_facts.architecture] }}"
+        dest: "/usr/local/lib/kind/kind-{{ kind_version }}-{{ kind_arch_by_platform[ansible_facts.architecture] }}"
+        owner: root
+        group: root
+        mode: "0755"
+        force: false
+
+    - name: Select the configured KIND version
+      ansible.builtin.file:
+        src: "/usr/local/lib/kind/kind-{{ kind_version }}-{{ kind_arch_by_platform[ansible_facts.architecture] }}"
+        dest: /usr/local/bin/kind
+        state: link
+        owner: root
+        group: root
+        force: true
+
+    - name: Create the ARC working directory
+      ansible.builtin.file:
+        path: "{{ arc_working_directory }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Write the KIND cluster configuration
+      ansible.builtin.template:
+        src: kind-config.yaml.j2
+        dest: "{{ arc_working_directory }}/kind.yaml"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Check existing KIND clusters
+      ansible.builtin.command:
+        argv:
+          - /usr/local/bin/kind
+          - get
+          - clusters
+      register: kind_clusters
+      changed_when: false
+
+    - name: Create the KIND cluster if it does not already exist
+      ansible.builtin.command:
+        argv:
+          - /usr/local/bin/kind
+          - create
+          - cluster
+          - --name
+          - "{{ kind_cluster_name }}"
+          - --config
+          - "{{ arc_working_directory }}/kind.yaml"
+      when: kind_cluster_name not in kind_clusters.stdout_lines
+
+    - name: Export the KIND kubeconfig for the privileged Ansible account
+      ansible.builtin.command:
+        argv:
+          - /usr/local/bin/kind
+          - export
+          - kubeconfig
+          - --name
+          - "{{ kind_cluster_name }}"
+      changed_when: false
+
+    - name: Ensure the ARC controller namespace exists
+      ansible.builtin.command:
+        argv:
+          - /snap/bin/kubectl
+          - apply
+          - -f
+          - -
+        stdin: |
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: {{ controller_namespace | to_json }}
+      register: controller_namespace_result
+      changed_when: "'created' in controller_namespace_result.stdout or 'configured' in controller_namespace_result.stdout"
+
+    - name: Ensure the runner namespace exists
+      ansible.builtin.command:
+        argv:
+          - /snap/bin/kubectl
+          - apply
+          - -f
+          - -
+        stdin: |
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: {{ runner_namespace | to_json }}
+      register: runner_namespace_result
+      changed_when: "'created' in runner_namespace_result.stdout or 'configured' in runner_namespace_result.stdout"
+
+    - name: Check whether the ARC controller Helm release exists
+      ansible.builtin.command:
+        argv:
+          - /snap/bin/helm
+          - list
+          - --namespace
+          - "{{ controller_namespace }}"
+          - --filter
+          - "^{{ controller_release_name }}$"
+          - --short
+      register: controller_release
+      changed_when: false
+
+    - name: Install the ARC controller chart when missing
+      ansible.builtin.command:
+        argv:
+          - /snap/bin/helm
+          - install
+          - "{{ controller_release_name }}"
+          - --namespace
+          - "{{ controller_namespace }}"
+          - --version
+          - "{{ arc_chart_version }}"
+          - --wait
+          - --timeout
+          - 5m
+          - oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set-controller
+      when: controller_release_name not in controller_release.stdout_lines
+
+    - name: Check whether the ARC GitHub credential secret exists
+      ansible.builtin.command:
+        argv:
+          - /snap/bin/kubectl
+          - get
+          - secret
+          - "{{ arc_secret_name }}"
+          - --namespace
+          - "{{ runner_namespace }}"
+      register: arc_secret
+      changed_when: false
+      failed_when: arc_secret.rc != 0 and "NotFound" not in arc_secret.stderr
+
+    - name: Prompt for the GitHub PAT if the Kubernetes secret is missing
+      ansible.builtin.pause:
+        prompt: Enter the GitHub PAT for ARC (input is hidden)
+        echo: false
+      register: arc_pat_prompt
+      when: arc_secret.rc != 0
+      no_log: true
+
+    - name: Require a non-empty GitHub PAT when creating the secret
+      ansible.builtin.assert:
+        that:
+          - arc_pat_prompt.user_input | length > 0
+        fail_msg: A GitHub PAT is required to create the ARC Kubernetes secret.
+      when: arc_secret.rc != 0
+      no_log: true
+
+    - name: Store the GitHub PAT as a Kubernetes secret
+      ansible.builtin.command:
+        argv:
+          - /snap/bin/kubectl
+          - apply
+          - -f
+          - -
+        stdin: |
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: {{ arc_secret_name }}
+            namespace: {{ runner_namespace }}
+          type: Opaque
+          data:
+            github_token: "{{ arc_pat_prompt.user_input | b64encode }}"
+      when: arc_secret.rc != 0
+      no_log: true
+
+    - name: Write the runner scale set Helm values
+      ansible.builtin.template:
+        src: arc-values.yaml.j2
+        dest: "{{ arc_working_directory }}/arc-values.yaml"
+        owner: root
+        group: root
+        mode: "0600"
+
+    - name: Check whether the runner scale set Helm release exists
+      ansible.builtin.command:
+        argv:
+          - /snap/bin/helm
+          - list
+          - --namespace
+          - "{{ runner_namespace }}"
+          - --filter
+          - "^{{ runner_scale_set_release_name }}$"
+          - --short
+      register: runner_scale_set_release
+      changed_when: false
+
+    - name: Install the runner scale set chart when missing
+      ansible.builtin.command:
+        argv:
+          - /snap/bin/helm
+          - install
+          - "{{ runner_scale_set_release_name }}"
+          - --namespace
+          - "{{ runner_namespace }}"
+          - --version
+          - "{{ arc_chart_version }}"
+          - --values
+          - "{{ arc_working_directory }}/arc-values.yaml"
+          - --wait
+          - --timeout
+          - 5m
+          - oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set
+      when: runner_scale_set_release_name not in runner_scale_set_release.stdout_lines
+
+    - name: Show the installed Helm releases
+      ansible.builtin.command:
+        argv:
+          - /snap/bin/helm
+          - list
+          - --all-namespaces
+      register: arc_helm_releases
+      changed_when: false
+
+    - name: Show the KIND node status
+      ansible.builtin.command:
+        argv:
+          - /snap/bin/kubectl
+          - get
+          - nodes
+      register: kind_nodes
+      changed_when: false
+
+    - name: Display the installed releases and node status
+      ansible.builtin.debug:
+        msg:
+          - "{{ arc_helm_releases.stdout_lines }}"
+          - "{{ kind_nodes.stdout_lines }}"

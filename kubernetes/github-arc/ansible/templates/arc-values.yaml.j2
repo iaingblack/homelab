@@ -1,0 +1,13 @@
+githubConfigUrl: {{ ("https://github.com/" ~ github_org) | to_json }}
+
+githubConfigSecret: {{ arc_secret_name | to_json }}
+
+runnerGroup: {{ runner_group | to_json }}
+
+runnerScaleSetName: {{ runner_scale_set_name | to_json }}
+
+minRunners: {{ min_runners }}
+maxRunners: {{ max_runners }}
+
+containerMode:
+  type: dind

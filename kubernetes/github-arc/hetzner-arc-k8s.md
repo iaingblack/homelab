@@ -2,6 +2,8 @@
 
 This guide installs a small Kubernetes cluster with **KIND** on a Hetzner-hosted Ubuntu server, installs **GitHub Actions Runner Controller (ARC)**, and registers an **organization-level runner scale set**.
 
+For an Ansible-driven install with settings in a separate variables file, see [the Ansible setup](ansible/README.md).
+
 Replace the example values before starting. Export the environment-specific values before connecting, then export all four values again in the VM shell; SSH does not pass local shell variables to the remote session automatically.
 
 ```bash
@@ -1193,6 +1195,33 @@ Set `KIND_VERSION` near the top to a release tag from the [KIND releases page](h
 Updating the KIND executable does not change the Kubernetes version in an existing cluster. To create a cluster with a different Kubernetes version, select the matching `kindest/node` image and digest from the release notes and use it in the cluster configuration. See the [KIND quick start](https://kind.sigs.k8s.io/docs/user/quick-start/) and [configuration guide](https://kind.sigs.k8s.io/docs/user/configuration/).
 
 The example workflows use floating container tags such as `debian:stable-slim` and `alpine:latest`. They follow their image publishers' current tags; see the [Debian image tags](https://hub.docker.com/_/debian) and [Alpine image tags](https://hub.docker.com/_/alpine), and replace the tag with a specific version or digest when you need repeatable test environments. The `ghcr.io/<GITHUB_ORG>/ci-tools:1.0.0` value is an example and should match the image tag you publish.
+
+## 27. Install with Ansible
+
+The playbook in [`ansible/setup.yml`](ansible/setup.yml) automates most of the host setup above: prerequisites, Docker/Helm/kubectl Snaps, KIND, the cluster, ARC namespaces and charts, and the Kubernetes PAT secret. Configuration lives in [`ansible/vars.example.yml`](ansible/vars.example.yml).
+
+Before running it:
+
+1. Create an Ubuntu VM and allow SSH from your management machine. The playbook does not create the VM or change its firewall.
+2. Create the organization runner group in GitHub using section 8. The playbook needs that group to exist before it installs the scale set.
+3. Install `ansible-core` on your management machine, copy the example variables file to `vars.yml`, and fill in the server IP, SSH user, organization, versions, and runner limits.
+
+Run it from the Ansible directory:
+
+```bash
+cd kubernetes/github-arc/ansible
+cp vars.example.yml vars.yml
+# Edit vars.yml, then run:
+ansible-playbook -i 'localhost,' setup.yml
+```
+
+The playbook prompts for the GitHub PAT only when the Kubernetes secret is missing. It does not save the PAT in the variables file or print it in Ansible output. The local `vars.yml` is ignored by Git.
+
+The sample binds the Kubernetes API to `127.0.0.1:45001`. To administer it remotely, set `kind_api_server_address` in `vars.yml` to the VM's IP and restrict TCP `45001` at the Hetzner firewall to trusted management IPs. The playbook does not configure firewall rules.
+
+The playbook installs the pinned KIND and ARC versions from `vars.yml`; Snap channels are also configurable there. It installs each Helm release only if it is missing. Re-running it will not upgrade an existing ARC release or recreate an existing cluster. For ARC chart updates, follow section 20 because ARC upgrades require careful CRD handling. Check the release links near the start of this guide before changing the pinned versions.
+
+The manual setup instructions remain useful if you want to understand or perform a step individually. Organization runner group creation, GitHub PAT permissions, VM provisioning, and firewall policy remain preparatory tasks outside the playbook.
 
 ---
 
